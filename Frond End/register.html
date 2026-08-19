@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create account | Kairos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="register-screen">
+  <main class="login-page register-page">
+    <section class="welcome-panel">
+      <a class="brand" href="index.html">Kairos<span>.</span></a>
+
+      <div class="welcome-copy">
+        <p class="eyebrow">THE RIGHT MOMENT FOR WORK</p>
+        <h1>More than a job.<br>A better fit.</h1>
+        <p class="intro"><strong>Kairos</strong> means the right moment. We make it easier for students to build experience and for employers to find reliable, motivated talent.</p>
+      </div>
+
+      <div class="connection-card">
+        <p class="connection-label">ONE PLACE. THE RIGHT CONNECTION.</p>
+        <div class="connection-flow">
+          <span><b>1</b>Share what you need</span>
+          <i>→</i>
+          <span><b>2</b>Meet your match</span>
+          <i>→</i>
+          <span><b>3</b>Make it happen</span>
+        </div>
+        <p class="trust-note"><span>✓</span> Flexible opportunities, meaningful growth</p>
+      </div>
+    </section>
+
+    <section class="form-panel register-form-panel">
+      <div class="form-box">
+        <p class="small-heading">GET STARTED</p>
+        <h2>Create your account</h2>
+        <p class="form-intro">Tell us a little about yourself.</p>
+
+        <div class="role-options" role="group" aria-label="Choose account type">
+          <button class="role-card selected" type="button" data-role="Student" aria-pressed="true">
+            <span class="role-icon">⌂</span>
+            <span><strong>I'm a student</strong><small>Find part-time opportunities</small></span>
+          </button>
+          <button class="role-card" type="button" data-role="Recruiter" aria-pressed="false">
+            <span class="role-icon">⌘</span>
+            <span><strong>I'm a recruiter</strong><small>Hire talented students</small></span>
+          </button>
+        </div>
+
+        <form id="registerForm" novalidate>
+          <label for="fullName">Full name</label>
+          <input id="fullName" type="text" placeholder="Enter your full name" required>
+
+          <label for="registerEmail">Email address</label>
+          <input id="registerEmail" type="email" placeholder="you@example.com" required>
+
+          <div id="studentFields" class="role-fields">
+            <label for="college">College or university</label>
+            <input id="college" type="text" placeholder="Example: Delhi University" required>
+
+            <div class="two-fields">
+              <div>
+                <label for="course">Course / degree</label>
+                <input id="course" type="text" placeholder="Example: BCA" required>
+              </div>
+              <div>
+                <label for="availability">Availability</label>
+                <select id="availability" required>
+                  <option value="" selected disabled>Choose</option>
+                  <option>Weekdays</option>
+                  <option>Weekends</option>
+                  <option>Both</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div id="recruiterFields" class="role-fields hidden">
+            <label for="company">Company name</label>
+            <input id="company" type="text" placeholder="Example: Bright Café">
+
+            <div class="two-fields">
+              <div>
+                <label for="jobTitle">Your job title</label>
+                <input id="jobTitle" type="text" placeholder="Example: Manager">
+              </div>
+              <div>
+                <label for="industry">Industry</label>
+                <select id="industry">
+                  <option value="" selected disabled>Choose</option>
+                  <option>Food & hospitality</option>
+                  <option>Retail</option>
+                  <option>Education</option>
+                  <option>Technology</option>
+                  <option>Other</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <label for="registerPassword">Create password</label>
+          <div class="password-input">
+            <input id="registerPassword" type="password" placeholder="At least 6 characters" minlength="6" required>
+            <button id="showPassword" type="button" aria-label="Show password">Show</button>
+          </div>
+
+          <label class="checkbox-label" for="terms">
+            <input id="terms" type="checkbox" required>
+            <span required>I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.</span>
+          </label>
+
+          <button class="sign-in-button" type="submit">
+        Create account <span>→</span>
+    </button>
+
+    <p id="message" class="message" aria-live="polite"></p>
+        </form>
+
+        <p class="signup-text">Already have an account? <a href="index.html">Sign in</a></p>
+      </div>
+    </section>
+  </main>
+
+  <script src="register.js"></script>
+</body>
+</html>
