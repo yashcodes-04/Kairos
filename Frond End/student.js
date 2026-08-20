@@ -62,7 +62,7 @@ function renderStudentJobs() {
         <div class="job-facts">
           <span>⌖ ${job.location}</span>
           <span>◷ ${job.hours}</span>
-          <span>${job.pay}</span>
+          <span>Rs. ${job.pay} /hour</span>
         </div>
         <p>${job.description}</p>
 
