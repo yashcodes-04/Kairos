@@ -37,7 +37,7 @@ showPasswordButton.addEventListener('click', () => {
   showPasswordButton.textContent = hidden ? 'Hide' : 'Show';
 });
 
-registerForm.addEventListener('submit', (event) => {
+registerForm.addEventListener('submit', async (event) => {
   event.preventDefault();
 
   if (!registerForm.checkValidity()) {
@@ -47,22 +47,15 @@ registerForm.addEventListener('submit', (event) => {
     return;
   }
 
-  const name = document.querySelector('#fullName').value;
-  const account = {
-    name: name.trim(),
-    email: document.querySelector('#registerEmail').value.trim(),
-    password: passwordInput.value,
-    role: selectedRole,
-    company: selectedRole === 'Recruiter' ? document.querySelector('#company').value.trim() : ''
-  };
-
-  localStorage.setItem('kairosAccount', JSON.stringify(account));
-  message.classList.remove('error-message');
-  message.textContent = `Account created! Taking you to the sign-in page...`;
-
-  setTimeout(() => {
-    window.location.href = 'index.html';
-  }, 1200);
+  const payload = { name: document.querySelector('#fullName').value.trim(), email: document.querySelector('#registerEmail').value.trim(), password: passwordInput.value, role: selectedRole, college: document.querySelector('#college').value.trim(), course: document.querySelector('#course').value.trim(), availability: document.querySelector('#availability').value, company: document.querySelector('#company').value.trim(), jobTitle: document.querySelector('#jobTitle').value.trim(), industry: document.querySelector('#industry').value };
+  try {
+    const response = await fetch('http://localhost:5000/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const account = await response.json();
+    if (!response.ok) throw new Error(account.message);
+    localStorage.setItem('kairosAccount', JSON.stringify(account));
+    message.classList.remove('error-message'); message.textContent = 'Account created! Opening your workspace...';
+    setTimeout(() => { window.location.href = selectedRole === 'Recruiter' ? 'recruiter.html' : 'student.html'; }, 900);
+  } catch (error) { message.textContent = error.message || 'Could not connect to the server.'; message.classList.add('error-message'); }
 });
 
 document.querySelectorAll('a[href="index.html"]').forEach((link) => {

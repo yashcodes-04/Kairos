@@ -28,7 +28,7 @@ showPasswordButton.addEventListener('click', () => {
   showPasswordButton.textContent = hidden ? 'Hide' : 'Show';
 });
 
-loginForm.addEventListener('submit', (event) => {
+loginForm.addEventListener('submit', async (event) => {
   event.preventDefault();
 
   if (!loginForm.checkValidity()) {
@@ -38,25 +38,17 @@ loginForm.addEventListener('submit', (event) => {
     return;
   }
 
-  const savedAccount = JSON.parse(localStorage.getItem('kairosAccount'));
   const email = document.querySelector('#email').value.trim();
   const password = passwordInput.value;
   const company = loginCompany.value.trim();
-
-  if (!savedAccount) {
-    message.textContent = 'No Kairos account found. Please create an account first.';
-    message.classList.add('error-message');
-    return;
-  }
-
-  if (savedAccount.email !== email || savedAccount.password !== password || savedAccount.role !== selectedRole || (selectedRole === 'Recruiter' && savedAccount.company !== company)) {
-    message.textContent = 'Your email, password, or account type does not match.';
-    message.classList.add('error-message');
-    return;
-  }
-
-  message.classList.remove('error-message');
-  message.textContent = `Welcome back, ${savedAccount.name}! Signed in as ${selectedRole}.`;
+  try {
+    const response = await fetch('http://localhost:5000/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password, role: selectedRole, company }) });
+    const account = await response.json();
+    if (!response.ok) throw new Error(account.message);
+    localStorage.setItem('kairosAccount', JSON.stringify(account));
+    message.classList.remove('error-message'); message.textContent = `Welcome back, ${account.name}!`;
+    setTimeout(() => { window.location.href = selectedRole === 'Recruiter' ? 'recruiter.html' : 'student.html'; }, 500);
+  } catch (error) { message.textContent = error.message || 'Could not connect to the server.'; message.classList.add('error-message'); }
 });
 
 document.querySelectorAll('a[href="register.html"]').forEach((link) => {
