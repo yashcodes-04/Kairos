@@ -1,0 +1,10 @@
+{
+  "name": "kairos-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "npm run start --prefix BackEnd",
+    "dev:backend": "npm run start --prefix BackEnd",
+    "dev:frontend": "npm run dev --prefix frontend"
+  }
+}

@@ -46,3 +46,16 @@ CREATE TABLE IF NOT EXISTS saved_jobs (
   FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
   FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS applications (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  job_id INT UNSIGNED NOT NULL,
+  student_id INT UNSIGNED NOT NULL,
+  status VARCHAR(50) DEFAULT 'Applied',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY unique_application (job_id, student_id),
+  FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE,
+  FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
+);
+
+
