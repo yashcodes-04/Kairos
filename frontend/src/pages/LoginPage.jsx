@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { api } from '../services/api';
-import { Home, Briefcase, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { Home, Briefcase, Eye, EyeOff, ArrowRight, Sun, Moon, Zap, UserCheck } from 'lucide-react';
 
 export default function LoginPage() {
   const [role, setRole] = useState('Student');
@@ -15,7 +16,17 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   const { login } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
+
+  const handleFillDemo = (demoRole, demoEmail, demoPass, demoCompany = '') => {
+    setRole(demoRole);
+    setEmail(demoEmail);
+    setPassword(demoPass);
+    setCompany(demoCompany);
+    setMessage('');
+    setIsError(false);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -54,6 +65,18 @@ export default function LoginPage() {
 
   return (
     <main className="login-page">
+      {/* Floating Theme Switcher */}
+      <button
+        type="button"
+        className="auth-theme-toggle"
+        onClick={toggleTheme}
+        aria-label="Toggle theme"
+        title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}
+      >
+        {theme === 'dark' ? <Sun size={15} color="#f0d49a" /> : <Moon size={15} color="#176b59" />}
+        <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+      </button>
+
       {/* Left Welcome Panel */}
       <section className="welcome-panel">
         <Link className="brand" to="/login">
@@ -104,7 +127,10 @@ export default function LoginPage() {
             <button
               className={`role-card ${role === 'Student' ? 'selected' : ''}`}
               type="button"
-              onClick={() => setRole('Student')}
+              onClick={() => {
+                setRole('Student');
+                setMessage('');
+              }}
               aria-pressed={role === 'Student'}
             >
               <span className="role-icon">
@@ -119,7 +145,10 @@ export default function LoginPage() {
             <button
               className={`role-card ${role === 'Recruiter' ? 'selected' : ''}`}
               type="button"
-              onClick={() => setRole('Recruiter')}
+              onClick={() => {
+                setRole('Recruiter');
+                setMessage('');
+              }}
               aria-pressed={role === 'Recruiter'}
             >
               <span className="role-icon">
@@ -130,6 +159,58 @@ export default function LoginPage() {
                 <small>Hire talented students</small>
               </span>
             </button>
+          </div>
+
+          {/* Quick Demo Credentials Box */}
+          <div className="demo-credentials-box">
+            <div className="demo-credentials-header">
+              <span className="demo-credentials-title">
+                <Zap size={14} /> Quick Demo Logins
+              </span>
+              <span className="demo-credentials-badge">Local Storage</span>
+            </div>
+
+            <div className="demo-credentials-grid">
+              <button
+                type="button"
+                className="demo-fill-btn"
+                onClick={() => handleFillDemo('Student', 'rahul@example.com', 'password123')}
+                title="Fill Rahul's credentials (Student)"
+              >
+                <strong>🎓 Rahul (Student)</strong>
+                <span>rahul@example.com</span>
+              </button>
+
+              <button
+                type="button"
+                className="demo-fill-btn"
+                onClick={() => handleFillDemo('Student', 'priya@example.com', 'password123')}
+                title="Fill Priya's credentials (Student)"
+              >
+                <strong>🎓 Priya (Student)</strong>
+                <span>priya@example.com</span>
+              </button>
+
+              <button
+                type="button"
+                className="demo-fill-btn"
+                onClick={() => handleFillDemo('Recruiter', 'rohan@bluetokai.com', 'password123', 'Blue Tokai Coffee Roasters')}
+                title="Fill Blue Tokai credentials (Recruiter)"
+              >
+                <strong>💼 Blue Tokai</strong>
+                <span>rohan@bluetokai.com</span>
+              </button>
+
+              <button
+                type="button"
+                className="demo-fill-btn"
+                onClick={() => handleFillDemo('Recruiter', 'ananya@urbanculture.in', 'password123', 'Urban Culture Co.')}
+                title="Fill Urban Culture credentials (Recruiter)"
+              >
+                <strong>💼 Urban Culture</strong>
+                <span>ananya@urbanculture.in</span>
+              </button>
+            </div>
           </div>
 
           <form onSubmit={handleSubmit} noValidate>

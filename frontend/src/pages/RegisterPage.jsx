@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { api } from '../services/api';
-import { Home, Briefcase, ArrowRight } from 'lucide-react';
+import { Home, Briefcase, ArrowRight, Sun, Moon } from 'lucide-react';
 
 export default function RegisterPage() {
   const [role, setRole] = useState('Student');
@@ -27,6 +28,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
 
   const { login } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -97,6 +99,18 @@ export default function RegisterPage() {
 
   return (
     <main className="login-page register-page">
+      {/* Floating Theme Switcher */}
+      <button
+        type="button"
+        className="auth-theme-toggle"
+        onClick={toggleTheme}
+        aria-label="Toggle theme"
+        title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}
+      >
+        {theme === 'dark' ? <Sun size={15} color="#f0d49a" /> : <Moon size={15} color="#176b59" />}
+        <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+      </button>
+
       {/* Left Welcome Panel */}
       <section className="welcome-panel">
         <Link className="brand" to="/login">

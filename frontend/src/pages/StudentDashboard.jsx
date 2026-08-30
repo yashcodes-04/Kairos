@@ -32,7 +32,7 @@ export default function StudentDashboard() {
       setAppliedJobIds(Array.isArray(appliedRes) ? appliedRes : []);
     } catch (err) {
       console.error('Error loading student jobs:', err);
-      setError('Could not load jobs from database. Ensure the backend server is running.');
+      setError('Could not load jobs from local storage. Please try again.');
     } finally {
       setLoading(false);
     }
