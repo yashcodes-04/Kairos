@@ -1,11 +1,13 @@
 import React from 'react';
-import { Mail, Users, Trash2, Power } from 'lucide-react';
+import { Mail, Users, Trash2, Power, CheckCircle, MessageSquare, Check } from 'lucide-react';
 
 export default function JobCardRecruiter({
   job,
   applications,
   onToggleStatus,
   onDeleteJob,
+  onAcceptApplicant,
+  onOpenChat,
 }) {
   const jobApps = applications.filter((app) => app.job_id === job.id);
   const vacanciesCount = Number(job.vacancies || 1);
@@ -71,23 +73,56 @@ export default function JobCardRecruiter({
           </p>
         ) : (
           <div className="applicants-list">
-            {jobApps.map((app) => (
-              <div key={app.application_id || `${app.job_id}-${app.student_id}`} className="applicant-card">
-                <div className="applicant-info">
-                  <strong>{app.student_name}</strong>
-                  <p>
-                    {app.college} · {app.course} · {app.availability || 'Flexible'}
-                  </p>
-                  <p style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '2px' }}>
-                    Applied {app.applied_at}
-                  </p>
+            {jobApps.map((app) => {
+              const isAccepted = app.status === 'Accepted';
+              return (
+                <div key={app.application_id || `${app.job_id}-${app.student_id}`} className="applicant-card">
+                  <div className="applicant-info">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <strong>{app.student_name}</strong>
+                      <span className={`applicant-status-badge ${isAccepted ? 'status-accepted' : 'status-pending'}`}>
+                        {isAccepted ? <><Check size={12} /> Accepted</> : 'Under Review'}
+                      </span>
+                    </div>
+                    <p>
+                      {app.college} · {app.course} · {app.availability || 'Flexible'}
+                    </p>
+                    <p style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '2px' }}>
+                      Applied {app.applied_at}
+                    </p>
+                  </div>
+
+                  <div className="applicant-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    {!isAccepted ? (
+                      <button
+                        type="button"
+                        className="accept-applicant-btn"
+                        onClick={() => onAcceptApplicant && onAcceptApplicant(app.application_id)}
+                        title="Accept this student's application"
+                      >
+                        <Check size={13} style={{ marginRight: '4px' }} />
+                        Accept Application
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="chat-applicant-btn"
+                        onClick={() => onOpenChat && onOpenChat(app)}
+                        title="Open direct chat with this student"
+                      >
+                        <MessageSquare size={13} style={{ marginRight: '4px' }} />
+                        Chat with {app.student_name.split(' ')[0]}
+                      </button>
+                    )}
+
+                    <a href={`mailto:${app.student_email}`} className="contact-student-btn" title="Send Email">
+                      <Mail size={12} style={{ marginRight: '4px' }} />
+                      Email
+                    </a>
+                  </div>
                 </div>
-                <a href={`mailto:${app.student_email}`} className="contact-student-btn">
-                  <Mail size={12} style={{ marginRight: '4px' }} />
-                  Contact ({app.student_email})
-                </a>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

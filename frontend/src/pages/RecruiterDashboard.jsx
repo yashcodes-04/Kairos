@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import JobCardRecruiter from '../components/JobCardRecruiter';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
-import { PlusCircle, Filter, ArrowRight, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { PlusCircle, Filter, ArrowRight, RefreshCw, CheckCircle2, MessageSquare } from 'lucide-react';
 
 export default function RecruiterDashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [jobs, setJobs] = useState([]);
   const [applications, setApplications] = useState([]);
   const [activeOnly, setActiveOnly] = useState(false);
@@ -14,6 +16,8 @@ export default function RecruiterDashboard() {
   const [postingLoading, setPostingLoading] = useState(false);
   const [jobMessage, setJobMessage] = useState('');
   const [isJobError, setIsJobError] = useState(false);
+
+  // Chat State
 
   // Form State
   const [title, setTitle] = useState('');
@@ -43,7 +47,40 @@ export default function RecruiterDashboard() {
 
   useEffect(() => {
     loadData();
+
+    // Listen for custom application updates & storage events
+    const handleAppUpdated = () => {
+      loadData();
+    };
+    window.addEventListener('kairos_application_updated', handleAppUpdated);
+    window.addEventListener('storage', handleAppUpdated);
+    return () => {
+      window.removeEventListener('kairos_application_updated', handleAppUpdated);
+      window.removeEventListener('storage', handleAppUpdated);
+    };
   }, [user?.id]);
+
+  const handleAcceptApplicant = async (applicationId) => {
+    try {
+      await api.updateApplicationStatus(applicationId, user.id, 'Accepted');
+      // Optimistically update
+      setApplications((prev) =>
+        prev.map((a) => (a.application_id === applicationId ? { ...a, status: 'Accepted' } : a))
+      );
+      // Auto open chat with accepted applicant
+      const targetApp = applications.find((a) => a.application_id === applicationId);
+      if (targetApp) {
+        navigate('/messages', { state: { applicationId, recipientInfo: targetApp } });
+      }
+    } catch (err) {
+      console.error('Error accepting applicant:', err);
+      loadData();
+    }
+  };
+
+  const handleOpenChat = (application) => {
+    navigate('/messages', { state: { applicationId: application.application_id, recipientInfo: application } });
+  };
 
   const handlePostJob = async (e) => {
     e.preventDefault();
@@ -298,6 +335,8 @@ export default function RecruiterDashboard() {
                     applications={applications}
                     onToggleStatus={handleToggleStatus}
                     onDeleteJob={handleDeleteJob}
+                    onAcceptApplicant={handleAcceptApplicant}
+                    onOpenChat={handleOpenChat}
                   />
                 ))}
               </div>

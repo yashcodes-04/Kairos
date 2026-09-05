@@ -7,6 +7,8 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import StudentDashboard from './pages/StudentDashboard';
 import RecruiterDashboard from './pages/RecruiterDashboard';
+import MessagesPage from './pages/MessagesPage';
+import SettingsPage from './pages/SettingsPage';
 
 function RootRedirect() {
   const { user, isAuthenticated } = useAuth();
@@ -41,6 +43,9 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+
+            <Route path="/messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
 
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>

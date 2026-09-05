@@ -1,5 +1,4 @@
 // LocalStorage-based Mock API Service for Kairos
-// Replaces the MySQL database and Express backend with local storage persistence and rich demo data.
 
 const STORAGE_KEYS = {
   STUDENTS: 'kairos_students',
@@ -7,7 +6,8 @@ const STORAGE_KEYS = {
   JOBS: 'kairos_jobs',
   APPLICATIONS: 'kairos_applications',
   SAVED_JOBS: 'kairos_saved_jobs',
-  INITIALIZED: 'kairos_mock_data_v1',
+  MESSAGES: 'kairos_messages',
+  INITIALIZED: 'kairos_mock_data_v2',
 };
 
 // Initial Demo Data
@@ -177,7 +177,7 @@ const INITIAL_APPLICATIONS = [
     id: 3,
     job_id: 2,
     student_id: 1,
-    status: 'Applied',
+    status: 'Accepted',
     created_at: new Date(Date.now() - 2 * 86400000).toISOString(),
   },
   {
@@ -194,6 +194,36 @@ const INITIAL_SAVED_JOBS = [
   { student_id: 1, job_id: 3, created_at: new Date().toISOString() },
 ];
 
+const INITIAL_MESSAGES = [
+  {
+    id: 1,
+    application_id: 3,
+    sender_id: 2,
+    sender_role: 'Recruiter',
+    sender_name: 'Ananya Sen',
+    text: 'Hi Rahul! We reviewed your profile and loved your creative background. We would love to discuss having you join our content team!',
+    created_at: new Date(Date.now() - 1 * 86400000).toISOString(),
+  },
+  {
+    id: 2,
+    application_id: 3,
+    sender_id: 1,
+    sender_role: 'Student',
+    sender_name: 'Rahul Sharma',
+    text: 'Hello Ananya! Thank you so much for accepting my application. I am excited to contribute to Urban Culture Co. When would be a good time to connect?',
+    created_at: new Date(Date.now() - 18 * 3600000).toISOString(),
+  },
+  {
+    id: 3,
+    application_id: 3,
+    sender_id: 2,
+    sender_role: 'Recruiter',
+    sender_name: 'Ananya Sen',
+    text: 'Are you available this Friday around 3:00 PM for a short 15-minute intro call?',
+    created_at: new Date(Date.now() - 4 * 3600000).toISOString(),
+  },
+];
+
 // Helper to seed localStorage
 function initializeLocalStorage() {
   if (!localStorage.getItem(STORAGE_KEYS.INITIALIZED)) {
@@ -202,6 +232,7 @@ function initializeLocalStorage() {
     localStorage.setItem(STORAGE_KEYS.JOBS, JSON.stringify(INITIAL_JOBS));
     localStorage.setItem(STORAGE_KEYS.APPLICATIONS, JSON.stringify(INITIAL_APPLICATIONS));
     localStorage.setItem(STORAGE_KEYS.SAVED_JOBS, JSON.stringify(INITIAL_SAVED_JOBS));
+    localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(INITIAL_MESSAGES));
     localStorage.setItem(STORAGE_KEYS.INITIALIZED, 'true');
   }
 }
@@ -369,6 +400,54 @@ export const api = {
     });
   },
 
+  // Profile Endpoints: Load the complete profile for the signed-in user
+  getProfile: async (userId, role) => {
+    return asyncWrap(() => {
+      if (role === 'Student') {
+        const student = getItems(STORAGE_KEYS.STUDENTS, INITIAL_STUDENTS).find((item) => Number(item.id) === Number(userId));
+        if (!student) throw new Error('Student profile not found.');
+        return { name: student.full_name, email: student.email, college: student.college, course: student.course, availability: student.availability };
+      }
+
+      const recruiter = getItems(STORAGE_KEYS.RECRUITERS, INITIAL_RECRUITERS).find((item) => Number(item.recruiter_id) === Number(userId));
+      if (!recruiter) throw new Error('Recruiter profile not found.');
+      return { name: recruiter.full_name, email: recruiter.email, company: recruiter.company_name, jobTitle: recruiter.job_title, industry: recruiter.industry };
+    });
+  },
+
+  // Profile Endpoints: Update profile details and return the refreshed session user
+  updateProfile: async ({ userId, role, profile }) => {
+    return asyncWrap(() => {
+      const name = profile.name?.trim();
+      const email = profile.email?.trim().toLowerCase();
+      if (!name || !email) throw new Error('Name and email are required.');
+
+      if (role === 'Student') {
+        const college = profile.college?.trim();
+        const course = profile.course?.trim();
+        if (!college || !course || !profile.availability) throw new Error('Please complete every student profile field.');
+        const students = getItems(STORAGE_KEYS.STUDENTS, INITIAL_STUDENTS);
+        const index = students.findIndex((item) => Number(item.id) === Number(userId));
+        if (index === -1) throw new Error('Student profile not found.');
+        if (students.some((item, itemIndex) => itemIndex !== index && item.email.toLowerCase() === email)) throw new Error('An account with this email already exists.');
+        students[index] = { ...students[index], full_name: name, email, college, course, availability: profile.availability };
+        setItems(STORAGE_KEYS.STUDENTS, students);
+        return { id: students[index].id, name, email, role: 'Student', company: '' };
+      }
+
+      const company = profile.company?.trim();
+      const jobTitle = profile.jobTitle?.trim();
+      if (!company || !jobTitle || !profile.industry) throw new Error('Please complete every company profile field.');
+      const recruiters = getItems(STORAGE_KEYS.RECRUITERS, INITIAL_RECRUITERS);
+      const index = recruiters.findIndex((item) => Number(item.recruiter_id) === Number(userId));
+      if (index === -1) throw new Error('Recruiter profile not found.');
+      if (recruiters.some((item, itemIndex) => itemIndex !== index && item.email.toLowerCase() === email)) throw new Error('An account with this email already exists.');
+      recruiters[index] = { ...recruiters[index], full_name: name, email, company_name: company, job_title: jobTitle, industry: profile.industry };
+      setItems(STORAGE_KEYS.RECRUITERS, recruiters);
+      return { id: recruiters[index].recruiter_id, name, email, role: 'Recruiter', company };
+    });
+  },
+
   // Student Endpoints: Get Active Jobs with Recruiter details
   getActiveJobs: async () => {
     return asyncWrap(() => {
@@ -524,9 +603,12 @@ export const api = {
         .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
         .map((app) => {
           const student = students.find((s) => Number(s.id) === Number(app.student_id)) || {};
+          const job = jobs.find((j) => Number(j.id) === Number(app.job_id)) || {};
           return {
             application_id: app.id,
             job_id: app.job_id,
+            job_title: job.title || 'Job Listing',
+            status: app.status || 'Applied',
             applied_at: formatDate(app.created_at),
             student_id: student.id || app.student_id,
             student_name: student.full_name || 'Student Applicant',
@@ -536,6 +618,232 @@ export const api = {
             availability: student.availability || 'Flexible',
           };
         });
+    });
+  },
+
+  // Recruiter: Accept or Reject an Application
+  updateApplicationStatus: async (applicationId, recruiterId, newStatus) => {
+    return asyncWrap(() => {
+      if (!['Accepted', 'Rejected', 'Applied'].includes(newStatus)) {
+        throw new Error('Invalid application status.');
+      }
+
+      const apps = getItems(STORAGE_KEYS.APPLICATIONS, INITIAL_APPLICATIONS);
+      const jobs = getItems(STORAGE_KEYS.JOBS, INITIAL_JOBS);
+      const recruiters = getItems(STORAGE_KEYS.RECRUITERS, INITIAL_RECRUITERS);
+      const students = getItems(STORAGE_KEYS.STUDENTS, INITIAL_STUDENTS);
+
+      const appIndex = apps.findIndex((a) => Number(a.id) === Number(applicationId));
+      if (appIndex === -1) {
+        throw new Error('Application not found.');
+      }
+
+      const app = apps[appIndex];
+      const job = jobs.find((j) => Number(j.id) === Number(app.job_id));
+
+      if (!job || Number(job.recruiter_id) !== Number(recruiterId)) {
+        throw new Error('Unauthorized to update this application.');
+      }
+
+      apps[appIndex].status = newStatus;
+      setItems(STORAGE_KEYS.APPLICATIONS, apps);
+
+      // If accepted, check if an introductory message already exists; if not, create one
+      if (newStatus === 'Accepted') {
+        const messages = getItems(STORAGE_KEYS.MESSAGES, INITIAL_MESSAGES);
+        const hasExistingMessage = messages.some((m) => Number(m.application_id) === Number(applicationId));
+
+        if (!hasExistingMessage) {
+          const recruiter = recruiters.find((r) => Number(r.recruiter_id) === Number(recruiterId));
+          const student = students.find((s) => Number(s.id) === Number(app.student_id));
+          const studentFirstName = student?.full_name ? student.full_name.split(' ')[0] : 'there';
+
+          const newMsgId = messages.length > 0 ? Math.max(...messages.map((m) => m.id || 0)) + 1 : 1;
+          const introMsg = {
+            id: newMsgId,
+            application_id: Number(applicationId),
+            sender_id: Number(recruiterId),
+            sender_role: 'Recruiter',
+            sender_name: recruiter?.full_name || 'Hiring Manager',
+            text: `Hi ${studentFirstName}! Your application for "${job.title}" has been accepted. We'd love to chat about next steps!`,
+            created_at: new Date().toISOString(),
+          };
+          messages.push(introMsg);
+          setItems(STORAGE_KEYS.MESSAGES, messages);
+        }
+      }
+
+      // Dispatch event so active pages and tabs update
+      try {
+        window.dispatchEvent(new CustomEvent('kairos_application_updated', { detail: { applicationId, newStatus } }));
+      } catch (_) {}
+
+      return { message: `Application ${newStatus.toLowerCase()} successfully.` };
+    });
+  },
+
+  // Student Endpoints: Get all applications with detailed statuses
+  getStudentApplications: async (studentId) => {
+    return asyncWrap(() => {
+      const apps = getItems(STORAGE_KEYS.APPLICATIONS, INITIAL_APPLICATIONS);
+      const jobs = getItems(STORAGE_KEYS.JOBS, INITIAL_JOBS);
+      const recruiters = getItems(STORAGE_KEYS.RECRUITERS, INITIAL_RECRUITERS);
+
+      const studentApps = apps.filter((a) => Number(a.student_id) === Number(studentId));
+
+      return studentApps.map((app) => {
+        const job = jobs.find((j) => Number(j.id) === Number(app.job_id)) || {};
+        const recruiter = recruiters.find((r) => Number(r.recruiter_id) === Number(job.recruiter_id)) || {};
+
+        return {
+          application_id: app.id,
+          job_id: app.job_id,
+          job_title: job.title || 'Job Listing',
+          work_type: job.work_type || 'On-site',
+          location: job.location || '',
+          pay: job.pay || '',
+          hours: job.hours || '',
+          status: app.status || 'Applied',
+          applied_at: formatDate(app.created_at),
+          recruiter_id: recruiter.recruiter_id || job.recruiter_id,
+          recruiter_name: recruiter.full_name || 'Hiring Manager',
+          company_name: recruiter.company_name || 'Verified Company',
+          recruiter_email: recruiter.email || '',
+        };
+      });
+    });
+  },
+
+  // Messaging Endpoints: Get active conversation threads for a user
+  getConversations: async (userId, role) => {
+    return asyncWrap(() => {
+      const apps = getItems(STORAGE_KEYS.APPLICATIONS, INITIAL_APPLICATIONS);
+      const jobs = getItems(STORAGE_KEYS.JOBS, INITIAL_JOBS);
+      const recruiters = getItems(STORAGE_KEYS.RECRUITERS, INITIAL_RECRUITERS);
+      const students = getItems(STORAGE_KEYS.STUDENTS, INITIAL_STUDENTS);
+      const messages = getItems(STORAGE_KEYS.MESSAGES, INITIAL_MESSAGES);
+
+      let eligibleApps = [];
+
+      if (role === 'Recruiter') {
+        const recruiterJobIds = new Set(
+          jobs.filter((j) => Number(j.recruiter_id) === Number(userId)).map((j) => Number(j.id))
+        );
+        // Include applications that are accepted or have messages
+        eligibleApps = apps.filter((a) => {
+          if (!recruiterJobIds.has(Number(a.job_id))) return false;
+          const hasMsgs = messages.some((m) => Number(m.application_id) === Number(a.id));
+          return a.status === 'Accepted' || hasMsgs;
+        });
+      } else {
+        eligibleApps = apps.filter((a) => {
+          if (Number(a.student_id) !== Number(userId)) return false;
+          const hasMsgs = messages.some((m) => Number(m.application_id) === Number(a.id));
+          return a.status === 'Accepted' || hasMsgs;
+        });
+      }
+
+      return eligibleApps.map((app) => {
+        const job = jobs.find((j) => Number(j.id) === Number(app.job_id)) || {};
+        const recruiter = recruiters.find((r) => Number(r.recruiter_id) === Number(job.recruiter_id)) || {};
+        const student = students.find((s) => Number(s.id) === Number(app.student_id)) || {};
+
+        const threadMsgs = messages.filter((m) => Number(m.application_id) === Number(app.id));
+        const lastMsg = threadMsgs.length > 0 ? threadMsgs[threadMsgs.length - 1] : null;
+
+        return {
+          application_id: app.id,
+          job_id: app.job_id,
+          job_title: job.title || 'Role',
+          status: app.status || 'Applied',
+          student_id: student.id || app.student_id,
+          student_name: student.full_name || 'Student Applicant',
+          student_college: student.college || 'College',
+          student_email: student.email || '',
+          recruiter_id: recruiter.recruiter_id || job.recruiter_id,
+          recruiter_name: recruiter.full_name || 'Recruiter',
+          company_name: recruiter.company_name || 'Company',
+          recruiter_email: recruiter.email || '',
+          last_message: lastMsg ? lastMsg.text : 'Application accepted. Start chatting!',
+          last_message_time: lastMsg ? formatDate(lastMsg.created_at) : formatDate(app.created_at),
+          message_count: threadMsgs.length,
+        };
+      });
+    });
+  },
+
+  // Messaging Endpoints: Get message stream for a specific application
+  getMessages: async (applicationId) => {
+    return asyncWrap(() => {
+      const messages = getItems(STORAGE_KEYS.MESSAGES, INITIAL_MESSAGES);
+      return messages
+        .filter((m) => Number(m.application_id) === Number(applicationId))
+        .sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
+    });
+  },
+
+  // Messaging Endpoints: Send a message
+  sendMessage: async ({ applicationId, senderId, senderRole, senderName, text }) => {
+    return asyncWrap(() => {
+      if (!applicationId || !senderId || !text || !text.trim()) {
+        throw new Error('Message text cannot be empty.');
+      }
+
+      const messages = getItems(STORAGE_KEYS.MESSAGES, INITIAL_MESSAGES);
+      const newId = messages.length > 0 ? Math.max(...messages.map((m) => m.id || 0)) + 1 : 1;
+
+      const newMsg = {
+        id: newId,
+        application_id: Number(applicationId),
+        sender_id: Number(senderId),
+        sender_role: senderRole,
+        sender_name: senderName || (senderRole === 'Recruiter' ? 'Recruiter' : 'Student'),
+        text: text.trim(),
+        created_at: new Date().toISOString(),
+      };
+
+      messages.push(newMsg);
+      setItems(STORAGE_KEYS.MESSAGES, messages);
+
+      // Trigger custom window events and storage notification for reactive instant UI updates
+      try {
+        window.dispatchEvent(new CustomEvent('kairos_message_sent', { detail: newMsg }));
+      } catch (_) {}
+
+      return newMsg;
+    });
+  },
+
+  // Messaging Endpoints: Mark messages from the other participant as seen
+  markMessagesAsSeen: async ({ applicationId, viewerId, viewerRole }) => {
+    return asyncWrap(() => {
+      if (!applicationId || !viewerId || !viewerRole) return [];
+
+      const messages = getItems(STORAGE_KEYS.MESSAGES, INITIAL_MESSAGES);
+      const seenAt = new Date().toISOString();
+      const seenMessages = [];
+      let changed = false;
+
+      const updatedMessages = messages.map((message) => {
+        const isInConversation = Number(message.application_id) === Number(applicationId);
+        const isIncoming = Number(message.sender_id) !== Number(viewerId) || message.sender_role !== viewerRole;
+
+        if (!isInConversation || !isIncoming || message.seen_at) return message;
+
+        const updatedMessage = { ...message, seen_at: seenAt, seen_by_id: Number(viewerId) };
+        seenMessages.push(updatedMessage);
+        changed = true;
+        return updatedMessage;
+      });
+
+      if (changed) {
+        setItems(STORAGE_KEYS.MESSAGES, updatedMessages);
+        try {
+          window.dispatchEvent(new CustomEvent('kairos_messages_seen', { detail: { applicationId, messages: seenMessages } }));
+        } catch (_) {}
+      }
+
+      return seenMessages;
     });
   },
 
@@ -623,6 +931,7 @@ export const api = {
     localStorage.setItem(STORAGE_KEYS.JOBS, JSON.stringify(INITIAL_JOBS));
     localStorage.setItem(STORAGE_KEYS.APPLICATIONS, JSON.stringify(INITIAL_APPLICATIONS));
     localStorage.setItem(STORAGE_KEYS.SAVED_JOBS, JSON.stringify(INITIAL_SAVED_JOBS));
+    localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(INITIAL_MESSAGES));
     localStorage.setItem(STORAGE_KEYS.INITIALIZED, 'true');
   },
 };

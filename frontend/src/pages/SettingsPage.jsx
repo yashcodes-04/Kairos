@@ -1,0 +1,85 @@
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Building2, GraduationCap, Save } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { api } from '../services/api';
+
+const emptyProfile = { name: '', email: '', college: '', course: '', availability: 'Weekdays', company: '', jobTitle: '', industry: '' };
+
+export default function SettingsPage() {
+  const { user, login } = useAuth();
+  const navigate = useNavigate();
+  const [profile, setProfile] = useState(emptyProfile);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState('');
+  const [isError, setIsError] = useState(false);
+  const homePath = user?.role === 'Recruiter' ? '/recruiter' : '/student';
+  const isRecruiter = user?.role === 'Recruiter';
+
+  useEffect(() => {
+    if (!user?.id) return;
+    api.getProfile(user.id, user.role)
+      .then((data) => setProfile({ ...emptyProfile, ...data }))
+      .catch((err) => { setIsError(true); setMessage(err.message || 'Could not load your profile.'); })
+      .finally(() => setLoading(false));
+  }, [user?.id, user?.role]);
+
+  const updateField = (field, value) => setProfile((previous) => ({ ...previous, [field]: value }));
+
+  const handleSave = async (event) => {
+    event.preventDefault();
+    setSaving(true);
+    setMessage('');
+    try {
+      const updatedUser = await api.updateProfile({ userId: user.id, role: user.role, profile });
+      login(updatedUser);
+      window.dispatchEvent(new CustomEvent('kairos_profile_updated', { detail: updatedUser }));
+      setIsError(false);
+      setMessage('Profile updated.');
+    } catch (err) {
+      setIsError(true);
+      setMessage(err.message || 'Could not update your profile.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return <div className="settings-page">
+    <header className="settings-topbar">
+      <Link to={homePath} className="dashboard-brand">Kairos<span>.</span></Link>
+      <button type="button" className="settings-back-btn" onClick={() => navigate(homePath)}><ArrowLeft size={16} />Back to workspace</button>
+    </header>
+    <main className="settings-content">
+      <section className="settings-intro">
+        <span className="settings-icon">{isRecruiter ? <Building2 size={22} /> : <GraduationCap size={22} />}</span>
+        <div><p className="small-heading">ACCOUNT SETTINGS</p><h1>Edit profile</h1><p>Keep your contact and profile information current.</p></div>
+      </section>
+      <form className="settings-form" onSubmit={handleSave}>
+        {loading ? <p className="settings-loading">Loading profile...</p> : <>
+          <div className="settings-form-section"><h2>Personal details</h2>
+            <div className="settings-field-grid">
+              <label>Full name<input value={profile.name} onChange={(event) => updateField('name', event.target.value)} required /></label>
+              <label>Email address<input type="email" value={profile.email} onChange={(event) => updateField('email', event.target.value)} required /></label>
+            </div>
+          </div>
+          {isRecruiter ? <div className="settings-form-section"><h2>Company details</h2>
+            <div className="settings-field-grid">
+              <label>Company name<input value={profile.company} onChange={(event) => updateField('company', event.target.value)} required /></label>
+              <label>Your job title<input value={profile.jobTitle} onChange={(event) => updateField('jobTitle', event.target.value)} required /></label>
+              <label>Industry<select value={profile.industry} onChange={(event) => updateField('industry', event.target.value)}><option>Technology</option><option>Retail</option><option>Food & hospitality</option><option>Education</option><option>Other</option></select></label>
+            </div>
+          </div> : <div className="settings-form-section"><h2>Academic details</h2>
+            <div className="settings-field-grid">
+              <label>College or university<input value={profile.college} onChange={(event) => updateField('college', event.target.value)} required /></label>
+              <label>Course<input value={profile.course} onChange={(event) => updateField('course', event.target.value)} required /></label>
+              <label>Availability<select value={profile.availability} onChange={(event) => updateField('availability', event.target.value)}><option>Weekdays</option><option>Weekends</option><option>Both</option></select></label>
+            </div>
+          </div>}
+          {message && <p className={`settings-message ${isError ? 'error' : 'success'}`}>{message}</p>}
+          <div className="settings-actions"><button type="submit" className="settings-save-btn" disabled={saving}><Save size={16} />{saving ? 'Saving...' : 'Save changes'}</button></div>
+        </>}
+      </form>
+    </main>
+  </div>;
+}

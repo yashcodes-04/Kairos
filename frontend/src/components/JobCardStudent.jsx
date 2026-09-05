@@ -1,21 +1,30 @@
 import React from 'react';
-import { MapPin, Clock, IndianRupee, Mail, Star, Check } from 'lucide-react';
+import { MapPin, Clock, IndianRupee, Mail, Star, Check, MessageSquare, Sparkles } from 'lucide-react';
 
 export default function JobCardStudent({
   job,
   isApplied,
   isSaved,
+  application,
   onToggleApply,
   onToggleSave,
+  onOpenChat,
 }) {
   const vacanciesCount = Number(job.vacancies || 1);
   const vacancyLabel = vacanciesCount === 1 ? '1 opening' : `${vacanciesCount} openings`;
+  const isAccepted = application?.status === 'Accepted';
 
   return (
-    <article className="student-job-card">
+    <article className={`student-job-card ${isAccepted ? 'card-accepted-glow' : ''}`}>
       <div className="job-card-top">
         <span className="status active">Live now</span>
-        <span className="opening-chip">{vacancyLabel}</span>
+        {isAccepted ? (
+          <span className="student-accepted-pill">
+            <Sparkles size={12} style={{ marginRight: '4px' }} /> Accepted
+          </span>
+        ) : (
+          <span className="opening-chip">{vacancyLabel}</span>
+        )}
       </div>
 
       <h3>{job.title}</h3>
@@ -55,21 +64,40 @@ export default function JobCardStudent({
         </div>
       </div>
 
+      {isAccepted && (
+        <div className="student-accepted-callout">
+          <strong>Application Accepted!</strong>
+          <p>The hiring team accepted your application. Start a conversation to arrange shifts & onboarding.</p>
+        </div>
+      )}
+
       <div className="job-card-actions">
-        <button
-          type="button"
-          className={`interest-button apply-button ${isApplied ? 'saved' : ''}`}
-          onClick={() => onToggleApply(job.id)}
-          style={{ flex: 2, marginTop: 0 }}
-        >
-          {isApplied ? (
-            <>
-              <Check size={14} style={{ marginRight: '4px', verticalAlign: 'middle' }} /> Applied
-            </>
-          ) : (
-            'Apply Now →'
-          )}
-        </button>
+        {isAccepted ? (
+          <button
+            type="button"
+            className="interest-button student-chat-action-btn"
+            onClick={() => onOpenChat && onOpenChat(application, job)}
+            style={{ flex: 2, marginTop: 0 }}
+          >
+            <MessageSquare size={14} style={{ marginRight: '5px', verticalAlign: 'middle' }} />
+            Chat with {job.company || 'Employer'}
+          </button>
+        ) : (
+          <button
+            type="button"
+            className={`interest-button apply-button ${isApplied ? 'saved' : ''}`}
+            onClick={() => onToggleApply(job.id)}
+            style={{ flex: 2, marginTop: 0 }}
+          >
+            {isApplied ? (
+              <>
+                <Check size={14} style={{ marginRight: '4px', verticalAlign: 'middle' }} /> Applied (Under Review)
+              </>
+            ) : (
+              'Apply Now →'
+            )}
+          </button>
+        )}
 
         <button
           type="button"
@@ -77,7 +105,7 @@ export default function JobCardStudent({
           onClick={() => onToggleSave(job.id)}
           style={{ flex: 1, marginTop: 0 }}
         >
-          {isSaved ? 'Saved ⭐' : 'Save ⭐'}
+          <Star size={14} style={{ marginRight: '4px', verticalAlign: 'middle' }} /> {isSaved ? 'Saved' : 'Save'}
         </button>
       </div>
     </article>

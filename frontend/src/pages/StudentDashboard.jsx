@@ -1,19 +1,23 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import JobCardStudent from '../components/JobCardStudent';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
-import { Search, Sparkles, Compass, CheckCircle2, Bookmark, RefreshCw } from 'lucide-react';
+import { Search, Sparkles, Compass, CheckCircle2, Bookmark, RefreshCw, MessageSquare, Check, FileText } from 'lucide-react';
 
 export default function StudentDashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [jobs, setJobs] = useState([]);
   const [savedJobIds, setSavedJobIds] = useState([]);
-  const [appliedJobIds, setAppliedJobIds] = useState([]);
+  const [studentApplications, setStudentApplications] = useState([]);
+  const [filterTab, setFilterTab] = useState('all'); // 'all' | 'accepted' | 'applied' | 'saved'
   const [searchTerm, setSearchTerm] = useState('');
-  const [showingSaved, setShowingSaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // Chat State
 
   const firstName = user?.name ? user.name.split(' ')[0] : 'Student';
 
@@ -22,17 +26,17 @@ export default function StudentDashboard() {
     setLoading(true);
     setError('');
     try {
-      const [jobsRes, savedRes, appliedRes] = await Promise.all([
+      const [jobsRes, savedRes, appsRes] = await Promise.all([
         api.getActiveJobs(),
         api.getSavedJobIds(user.id),
-        api.getAppliedJobIds(user.id),
+        api.getStudentApplications(user.id),
       ]);
       setJobs(Array.isArray(jobsRes) ? jobsRes : []);
       setSavedJobIds(Array.isArray(savedRes) ? savedRes : []);
-      setAppliedJobIds(Array.isArray(appliedRes) ? appliedRes : []);
+      setStudentApplications(Array.isArray(appsRes) ? appsRes : []);
     } catch (err) {
       console.error('Error loading student jobs:', err);
-      setError('Could not load jobs from local storage. Please try again.');
+      setError('Could not load jobs from storage. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -40,21 +44,44 @@ export default function StudentDashboard() {
 
   useEffect(() => {
     loadData();
+
+    // Listen for live cross-tab & custom application events
+    const handleSync = () => {
+      loadData();
+    };
+    window.addEventListener('kairos_application_updated', handleSync);
+    window.addEventListener('kairos_message_sent', handleSync);
+    window.addEventListener('storage', handleSync);
+
+    return () => {
+      window.removeEventListener('kairos_application_updated', handleSync);
+      window.removeEventListener('kairos_message_sent', handleSync);
+      window.removeEventListener('storage', handleSync);
+    };
   }, [user?.id]);
+
+  const appliedJobIds = useMemo(() => {
+    return studentApplications.map((a) => Number(a.job_id));
+  }, [studentApplications]);
+
+  const acceptedJobIds = useMemo(() => {
+    return studentApplications
+      .filter((a) => a.status === 'Accepted')
+      .map((a) => Number(a.job_id));
+  }, [studentApplications]);
 
   const handleToggleApply = async (jobId) => {
     const isApplied = appliedJobIds.includes(jobId);
     try {
       if (isApplied) {
-        setAppliedJobIds((prev) => prev.filter((id) => id !== jobId));
+        setStudentApplications((prev) => prev.filter((a) => Number(a.job_id) !== Number(jobId)));
         await api.withdrawApplication(jobId, user.id);
       } else {
-        setAppliedJobIds((prev) => [...prev, jobId]);
         await api.applyForJob(jobId, user.id);
+        await loadData();
       }
     } catch (err) {
       console.error('Failed to update application status:', err);
-      // Revert
       loadData();
     }
   };
@@ -71,9 +98,18 @@ export default function StudentDashboard() {
       }
     } catch (err) {
       console.error('Failed to update saved job status:', err);
-      // Revert
       loadData();
     }
+  };
+
+  const handleOpenChat = (application, job) => {
+    const appId = application?.application_id || application?.id;
+    navigate('/messages', { state: { applicationId: appId, recipientInfo: {
+      application_id: appId,
+      job_title: job?.title || application?.job_title,
+      company_name: job?.company || application?.company_name,
+      recruiter_name: job?.recruiter_name || application?.recruiter_name,
+    } } });
   };
 
   const filteredJobs = useMemo(() => {
@@ -85,10 +121,18 @@ export default function StudentDashboard() {
           .toLowerCase()
           .includes(term);
 
-      const matchesTab = !showingSaved || savedJobIds.includes(job.id);
-      return matchesSearch && matchesTab;
+      let matchesFilter = true;
+      if (filterTab === 'accepted') {
+        matchesFilter = acceptedJobIds.includes(job.id);
+      } else if (filterTab === 'applied') {
+        matchesFilter = appliedJobIds.includes(job.id);
+      } else if (filterTab === 'saved') {
+        matchesFilter = savedJobIds.includes(job.id);
+      }
+
+      return matchesSearch && matchesFilter;
     });
-  }, [jobs, searchTerm, showingSaved, savedJobIds]);
+  }, [jobs, searchTerm, filterTab, savedJobIds, appliedJobIds, acceptedJobIds]);
 
   return (
     <div className="dashboard-screen student-screen">
@@ -109,9 +153,23 @@ export default function StudentDashboard() {
             </p>
           </div>
 
-          <div className="live-indicator">
-            <span />
-            <strong>{jobs.length}</strong> live jobs
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            {acceptedJobIds.length > 0 && (
+              <button
+                type="button"
+                className="accepted-indicator-badge"
+                onClick={() => setFilterTab('accepted')}
+              >
+                <Sparkles size={14} />
+                <strong>{acceptedJobIds.length}</strong>
+                <span>Accepted Application{acceptedJobIds.length === 1 ? '' : 's'}</span>
+              </button>
+            )}
+
+            <div className="live-indicator">
+              <span />
+              <strong>{jobs.length}</strong> live jobs
+            </div>
           </div>
         </section>
 
@@ -129,19 +187,53 @@ export default function StudentDashboard() {
           <div className="student-section-bar">
             <div>
               <p className="small-heading">LIVE OPPORTUNITIES</p>
-              <h2>{showingSaved ? 'Your Saved Jobs' : 'Jobs available now'}</h2>
+              <h2>
+                {filterTab === 'accepted'
+                  ? ' Accepted Applications'
+                  : filterTab === 'applied'
+                  ? 'Your Applied Roles'
+                  : filterTab === 'saved'
+                  ? 'Your Saved Jobs'
+                  : 'Jobs available now'}
+              </h2>
             </div>
 
             <div className="job-tools">
-              <button
-                id="savedJobsButton"
-                className={`text-action ${showingSaved ? 'selected' : ''}`}
-                type="button"
-                onClick={() => setShowingSaved(!showingSaved)}
-              >
-                <Bookmark size={13} style={{ marginRight: '4px', verticalAlign: 'middle' }} />
-                {showingSaved ? 'All live jobs' : 'Saved jobs'} <span>{savedJobIds.length}</span>
-              </button>
+              <div className="tab-pills-group">
+                <button
+                  type="button"
+                  className={`text-action ${filterTab === 'all' ? 'selected' : ''}`}
+                  onClick={() => setFilterTab('all')}
+                >
+                  All ({jobs.length})
+                </button>
+
+                {acceptedJobIds.length > 0 && (
+                  <button
+                    type="button"
+                    className={`text-action accepted-tab ${filterTab === 'accepted' ? 'selected' : ''}`}
+                    onClick={() => setFilterTab('accepted')}
+                  >
+                    <Sparkles size={12} style={{ marginRight: '3px' }} /> Accepted ({acceptedJobIds.length})
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  className={`text-action ${filterTab === 'applied' ? 'selected' : ''}`}
+                  onClick={() => setFilterTab('applied')}
+                >
+                  <FileText size={12} style={{ marginRight: '3px' }} /> Applied ({appliedJobIds.length})
+                </button>
+
+                <button
+                  id="savedJobsButton"
+                  className={`text-action ${filterTab === 'saved' ? 'selected' : ''}`}
+                  onClick={() => setFilterTab('saved')}
+                >
+                  <Bookmark size={12} style={{ marginRight: '3px' }} /> Saved ({savedJobIds.length})
+                </button>
+              </div>
 
               <label className="search-box" htmlFor="jobSearch">
                 <Search size={15} style={{ color: 'var(--muted)', flexShrink: 0 }} />
@@ -169,30 +261,43 @@ export default function StudentDashboard() {
               <h3>
                 {searchTerm
                   ? 'No roles match that search'
-                  : showingSaved
+                  : filterTab === 'accepted'
+                  ? 'No accepted applications yet'
+                  : filterTab === 'applied'
+                  ? 'You have not applied to any roles yet'
+                  : filterTab === 'saved'
                   ? 'No saved jobs yet'
                   : 'New opportunities are on their way'}
               </h3>
               <p>
                 {searchTerm
                   ? 'Try another job title or location.'
-                  : showingSaved
-                  ? 'Click "Save ⭐" on any job to keep track of roles you like.'
+                  : filterTab === 'accepted'
+                  ? 'When recruiters accept your application, you will be notified here and can chat directly.'
+                  : filterTab === 'applied'
+                  ? 'Browse live jobs and click "Apply Now" to start sending applications.'
+                  : filterTab === 'saved'
+                  ? 'Click "Save " on any job to keep track of roles you like.'
                   : 'Check back soon — recruiters can publish jobs here anytime.'}
               </p>
             </div>
           ) : (
             <div id="studentJobsList" className="student-jobs-grid">
-              {filteredJobs.map((job) => (
-                <JobCardStudent
-                  key={job.id}
-                  job={job}
-                  isApplied={appliedJobIds.includes(job.id)}
-                  isSaved={savedJobIds.includes(job.id)}
-                  onToggleApply={handleToggleApply}
-                  onToggleSave={handleToggleSave}
-                />
-              ))}
+              {filteredJobs.map((job) => {
+                const app = studentApplications.find((a) => Number(a.job_id) === Number(job.id));
+                return (
+                  <JobCardStudent
+                    key={job.id}
+                    job={job}
+                    application={app}
+                    isApplied={appliedJobIds.includes(job.id)}
+                    isSaved={savedJobIds.includes(job.id)}
+                    onToggleApply={handleToggleApply}
+                    onToggleSave={handleToggleSave}
+                    onOpenChat={handleOpenChat}
+                  />
+                );
+              })}
             </div>
           )}
         </section>
@@ -206,13 +311,13 @@ export default function StudentDashboard() {
           </div>
           <div>
             <b>2</b>
-            <h3>Check the fit</h3>
+            <h3>Check the fit & Apply</h3>
             <p>Review the hours, location, pay, and number of openings.</p>
           </div>
           <div>
             <b>3</b>
-            <h3>Apply with confidence</h3>
-            <p>Choose work that leaves room for your studies.</p>
+            <h3>Chat directly once accepted</h3>
+            <p>Connect seamlessly with employers to finalize your shift.</p>
           </div>
         </section>
       </main>
