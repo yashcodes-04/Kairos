@@ -8,10 +8,13 @@ const STORAGE_KEYS = {
   SAVED_JOBS: 'kairos_saved_jobs',
   MESSAGES: 'kairos_messages',
   INITIALIZED: 'kairos_mock_data_v2',
+  DEMO_VERSION: 'kairos_demo_data_version',
 };
 
+const DEMO_DATA_VERSION = 'chitkara-rajpura-v1';
+
 // Initial Demo Data
-const INITIAL_STUDENTS = [
+const LEGACY_INITIAL_STUDENTS = [
   {
     id: 1,
     full_name: 'Rahul Sharma',
@@ -44,7 +47,7 @@ const INITIAL_STUDENTS = [
   },
 ];
 
-const INITIAL_RECRUITERS = [
+const LEGACY_INITIAL_RECRUITERS = [
   {
     recruiter_id: 1,
     full_name: 'Rohan Verma',
@@ -77,7 +80,7 @@ const INITIAL_RECRUITERS = [
   },
 ];
 
-const INITIAL_JOBS = [
+const LEGACY_INITIAL_JOBS = [
   {
     id: 1,
     recruiter_id: 1,
@@ -194,7 +197,7 @@ const INITIAL_SAVED_JOBS = [
   { student_id: 1, job_id: 3, created_at: new Date().toISOString() },
 ];
 
-const INITIAL_MESSAGES = [
+const LEGACY_INITIAL_MESSAGES = [
   {
     id: 1,
     application_id: 3,
@@ -224,6 +227,33 @@ const INITIAL_MESSAGES = [
   },
 ];
 
+const INITIAL_STUDENTS = [
+  { id: 1, full_name: 'Rahul Sharma', email: 'rahul@example.com', password: 'password123', college: 'Chitkara University, Punjab Campus', course: 'BCA', availability: 'Weekdays', created_at: new Date(Date.now() - 7 * 86400000).toISOString() },
+  { id: 2, full_name: 'Priya Patel', email: 'priya@example.com', password: 'password123', college: 'Chitkara University, Punjab Campus', course: 'BBA Marketing', availability: 'Weekends', created_at: new Date(Date.now() - 5 * 86400000).toISOString() },
+  { id: 3, full_name: 'Aarav Mehta', email: 'aarav@example.com', password: 'password123', college: 'Chitkara University, Punjab Campus', course: 'B.Des User Experience', availability: 'Both', created_at: new Date(Date.now() - 3 * 86400000).toISOString() },
+];
+
+const INITIAL_RECRUITERS = [
+  { recruiter_id: 1, full_name: 'Gurpreet Singh', email: 'gurpreet@drteacafe.example', password: 'password123', company_name: 'Dr Tea Cafe', job_title: 'Cafe Manager', industry: 'Food & hospitality', created_at: new Date(Date.now() - 14 * 86400000).toISOString() },
+  { recruiter_id: 2, full_name: 'Mehak Kaur', email: 'mehak@dosahub.example', password: 'password123', company_name: 'Dosa Hub', job_title: 'Shift Supervisor', industry: 'Food & hospitality', created_at: new Date(Date.now() - 10 * 86400000).toISOString() },
+  { recruiter_id: 3, full_name: 'Arshdeep Singh', email: 'arshdeep@bevcafe.example', password: 'password123', company_name: 'Bev Cafe - CU Punjab', job_title: 'Outlet Supervisor', industry: 'Food & hospitality', created_at: new Date(Date.now() - 8 * 86400000).toISOString() },
+];
+
+const INITIAL_JOBS = [
+  { id: 1, recruiter_id: 1, title: 'Cafe Counter Assistant', work_type: 'On-site', location: 'Village Jansla, near Chitkara University', hours: '15-20 hours', pay: '250', vacancies: 2, description: 'Handle orders, serve beverages, and keep the counter ready during student rush hours. Morning and evening shifts available.', status: 'Active', created_at: new Date(Date.now() - 6 * 86400000).toISOString() },
+  { id: 2, recruiter_id: 2, title: 'Service Crew Member', work_type: 'On-site', location: 'Rajpura-Patiala Highway, near Chitkara', hours: '12-18 hours', pay: '230', vacancies: 1, description: 'Support table service, take orders, and help with takeaway packing during lunch and evening shifts.', status: 'Active', created_at: new Date(Date.now() - 4 * 86400000).toISOString() },
+  { id: 3, recruiter_id: 2, title: 'Kitchen and Service Assistant', work_type: 'On-site', location: 'Rajpura-Patiala Highway, near Chitkara', hours: '10-15 hours', pay: '230', vacancies: 1, description: 'Assist the kitchen team with prep, serve customers, and keep the dining area organised during busy periods.', status: 'Active', created_at: new Date(Date.now() - 3 * 86400000).toISOString() },
+  { id: 4, recruiter_id: 1, title: 'Weekend Cafe Helper', work_type: 'On-site', location: 'Village Jansla, near Chitkara University', hours: '6-10 hours', pay: '220', vacancies: 1, description: 'Help with stock checks, counter clean-up, and takeaway orders on weekend mornings and evenings.', status: 'Active', created_at: new Date(Date.now() - 2 * 86400000).toISOString() },
+  { id: 5, recruiter_id: 3, title: 'Campus Cafe Crew', work_type: 'On-site', location: 'Chitkara University, Rajpura', hours: '10-15 hours', pay: '240', vacancies: 2, description: 'Prepare cold drinks, manage the counter, and help fellow students during between-class rushes.', status: 'Active', created_at: new Date(Date.now() - 1 * 86400000).toISOString() },
+  { id: 6, recruiter_id: 3, title: 'Evening Counter Associate', work_type: 'On-site', location: 'Chitkara University, Rajpura', hours: '8-12 hours', pay: '240', vacancies: 1, description: 'Take orders, prepare simple beverages, and close the counter after evening classes.', status: 'Active', created_at: new Date(Date.now() - 12 * 3600000).toISOString() },
+];
+
+const INITIAL_MESSAGES = [
+  { id: 1, application_id: 3, sender_id: 2, sender_role: 'Recruiter', sender_name: 'Mehak Kaur', text: 'Hi Rahul! We have a part-time opening at Dosa Hub near campus and would like to discuss the shifts with you.', created_at: new Date(Date.now() - 1 * 86400000).toISOString() },
+  { id: 2, application_id: 3, sender_id: 1, sender_role: 'Student', sender_name: 'Rahul Sharma', text: 'Hello Mehak! Thank you for accepting my application. I can work around my classes and would be happy to discuss the schedule.', created_at: new Date(Date.now() - 18 * 3600000).toISOString() },
+  { id: 3, application_id: 3, sender_id: 2, sender_role: 'Recruiter', sender_name: 'Mehak Kaur', text: 'Are you available this Friday around 3:00 PM for a short introduction call?', created_at: new Date(Date.now() - 4 * 3600000).toISOString() },
+];
+
 // Helper to seed localStorage
 function initializeLocalStorage() {
   if (!localStorage.getItem(STORAGE_KEYS.INITIALIZED)) {
@@ -237,8 +267,26 @@ function initializeLocalStorage() {
   }
 }
 
+function migrateDemoData() {
+  if (localStorage.getItem(STORAGE_KEYS.DEMO_VERSION) === DEMO_DATA_VERSION) return;
+
+  const replaceSeededRecords = (key, seededRecords, idField) => {
+    const seededIds = new Set(seededRecords.map((record) => Number(record[idField])));
+    const currentRecords = getItems(key, []);
+    const userRecords = currentRecords.filter((record) => !seededIds.has(Number(record[idField])));
+    setItems(key, [...seededRecords, ...userRecords]);
+  };
+
+  replaceSeededRecords(STORAGE_KEYS.STUDENTS, INITIAL_STUDENTS, 'id');
+  replaceSeededRecords(STORAGE_KEYS.RECRUITERS, INITIAL_RECRUITERS, 'recruiter_id');
+  replaceSeededRecords(STORAGE_KEYS.JOBS, INITIAL_JOBS, 'id');
+  replaceSeededRecords(STORAGE_KEYS.MESSAGES, INITIAL_MESSAGES, 'id');
+  localStorage.setItem(STORAGE_KEYS.DEMO_VERSION, DEMO_DATA_VERSION);
+}
+
 // Initialize on load
 initializeLocalStorage();
+migrateDemoData();
 
 // Storage helper functions
 function getItems(key, fallback = []) {

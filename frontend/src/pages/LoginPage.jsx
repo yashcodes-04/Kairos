@@ -75,8 +75,8 @@ export default function LoginPage() {
           {demoOpen && <div id="demo-accounts" className="demo-menu-panel">
             <button type="button" onClick={() => handleFillDemo('Student', 'rahul@example.com', 'password123')}><GraduationCap size={14} /><span>Rahul<span>Student</span></span></button>
             <button type="button" onClick={() => handleFillDemo('Student', 'priya@example.com', 'password123')}><GraduationCap size={14} /><span>Priya<span>Student</span></span></button>
-            <button type="button" onClick={() => handleFillDemo('Recruiter', 'rohan@bluetokai.com', 'password123', 'Blue Tokai Coffee Roasters')}><Briefcase size={14} /><span>Blue Tokai<span>Recruiter</span></span></button>
-            <button type="button" onClick={() => handleFillDemo('Recruiter', 'ananya@urbanculture.in', 'password123', 'Urban Culture Co.')}><Briefcase size={14} /><span>Urban Culture<span>Recruiter</span></span></button>
+            <button type="button" onClick={() => handleFillDemo('Recruiter', 'gurpreet@drteacafe.example', 'password123', 'Dr Tea Cafe')}><Briefcase size={14} /><span>Dr Tea Cafe<span>Recruiter</span></span></button>
+            <button type="button" onClick={() => handleFillDemo('Recruiter', 'mehak@dosahub.example', 'password123', 'Dosa Hub')}><Briefcase size={14} /><span>Dosa Hub<span>Recruiter</span></span></button>
           </div>}
         </div>
         <button type="button" className="auth-theme-toggle" onClick={toggleTheme} aria-label="Toggle theme" title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}>
