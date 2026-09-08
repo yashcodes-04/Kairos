@@ -47,7 +47,10 @@ export default function SettingsPage() {
 
   return <div className="settings-page">
     <header className="settings-topbar">
-      <Link to={homePath} className="dashboard-brand">Kairos<span>.</span></Link>
+      <Link to={homePath} className="dashboard-brand">
+        <img src="/favicon.png" alt="Kairos" className="dashboard-brand-logo-img" />
+        <span>Kairos<span className="brand-dot">.</span></span>
+      </Link>
       <button type="button" className="settings-back-btn" onClick={() => navigate(homePath)}><ArrowLeft size={16} />Back to workspace</button>
     </header>
     <main className="settings-content">

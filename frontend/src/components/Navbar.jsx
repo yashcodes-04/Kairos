@@ -48,7 +48,8 @@ export default function Navbar({ workspaceLabel }) {
     <>
       <header className="dashboard-header">
         <Link to={user?.role === 'Recruiter' ? '/recruiter' : '/student'} className="dashboard-brand">
-          Kairos<span>.</span>
+          <img src="/favicon.png" alt="Kairos" className="dashboard-brand-logo-img" />
+          <span>Kairos<span className="brand-dot">.</span></span>
         </Link>
 
         {workspaceLabel && (

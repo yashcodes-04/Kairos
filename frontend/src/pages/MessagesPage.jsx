@@ -179,7 +179,10 @@ export default function MessagesPage() {
   return (
     <div className="messages-page">
       <header className="messages-topbar">
-        <Link to={homePath} className="dashboard-brand">Kairos<span>.</span></Link>
+        <Link to={homePath} className="dashboard-brand">
+          <img src="/favicon.png" alt="Kairos" className="dashboard-brand-logo-img" />
+          <span>Kairos<span className="brand-dot">.</span></span>
+        </Link>
         <h1>Messages</h1>
         <div className="messages-header-actions">
           <button type="button" className="theme-button" onClick={toggleTheme} aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'} title="Switch theme">

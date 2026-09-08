@@ -88,7 +88,8 @@ export default function LoginPage() {
       {/* Left Welcome Panel */}
       <section className="welcome-panel">
         <Link className="brand" to="/login">
-          Kairos<span>.</span>
+          <img src="/favicon.png" alt="Kairos" className="brand-logo-img" />
+          <span>Kairos<span className="brand-dot">.</span></span>
         </Link>
 
         <div className="welcome-copy">
