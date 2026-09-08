@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import JobCardRecruiter from '../components/JobCardRecruiter';
@@ -152,8 +152,13 @@ export default function RecruiterDashboard() {
     }
   };
 
-  const visibleJobs = jobs.filter((job) => !activeOnly || job.status === 'Active');
-  const activeCount = jobs.filter((job) => job.status === 'Active').length;
+  const visibleJobs = useMemo(() => {
+    return jobs.filter((job) => !activeOnly || job.status === 'Active');
+  }, [jobs, activeOnly]);
+
+  const activeCount = useMemo(() => {
+    return jobs.filter((job) => job.status === 'Active').length;
+  }, [jobs]);
 
   return (
     <div className="dashboard-screen">

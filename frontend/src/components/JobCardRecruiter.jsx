@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mail, Users, Trash2, Power, CheckCircle, MessageSquare, Check } from 'lucide-react';
+import { Mail, Users, Trash2, Power, MessageSquare, Check } from 'lucide-react';
 
 export default function JobCardRecruiter({
   job,

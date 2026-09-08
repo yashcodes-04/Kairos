@@ -11,154 +11,23 @@ const STORAGE_KEYS = {
   DEMO_VERSION: 'kairos_demo_data_version',
 };
 
-const DEMO_DATA_VERSION = 'chitkara-rajpura-v1';
+const DEMO_DATA_VERSION = 'chitkara-rajpura-v2';
 
-// Initial Demo Data
-const LEGACY_INITIAL_STUDENTS = [
-  {
-    id: 1,
-    full_name: 'Rahul Sharma',
-    email: 'rahul@example.com',
-    password: 'password123',
-    college: 'Delhi University',
-    course: 'BCA Computer Applications',
-    availability: 'Weekdays',
-    created_at: new Date(Date.now() - 7 * 86400000).toISOString(),
-  },
-  {
-    id: 2,
-    full_name: 'Priya Patel',
-    email: 'priya@example.com',
-    password: 'password123',
-    college: "St. Xavier's College",
-    course: 'B.Com Marketing',
-    availability: 'Weekends',
-    created_at: new Date(Date.now() - 5 * 86400000).toISOString(),
-  },
-  {
-    id: 3,
-    full_name: 'Aarav Mehta',
-    email: 'aarav@example.com',
-    password: 'password123',
-    college: 'IIT Delhi',
-    course: 'B.Tech Design & Computing',
-    availability: 'Both',
-    created_at: new Date(Date.now() - 3 * 86400000).toISOString(),
-  },
+const INITIAL_STUDENTS = [
+  { id: 1, full_name: 'Rahul Sharma', email: 'rahul@example.com', password: 'password123', college: 'Chitkara University, Punjab Campus', course: 'BCA', availability: 'Weekdays', created_at: new Date(Date.now() - 7 * 86400000).toISOString() },
+  { id: 2, full_name: 'Priya Patel', email: 'priya@example.com', password: 'password123', college: 'Chitkara University, Punjab Campus', course: 'BBA Marketing', availability: 'Weekends', created_at: new Date(Date.now() - 5 * 86400000).toISOString() },
 ];
 
-const LEGACY_INITIAL_RECRUITERS = [
-  {
-    recruiter_id: 1,
-    full_name: 'Rohan Verma',
-    email: 'rohan@bluetokai.com',
-    password: 'password123',
-    company_name: 'Blue Tokai Coffee Roasters',
-    job_title: 'Operations Manager',
-    industry: 'Food & hospitality',
-    created_at: new Date(Date.now() - 14 * 86400000).toISOString(),
-  },
-  {
-    recruiter_id: 2,
-    full_name: 'Ananya Sen',
-    email: 'ananya@urbanculture.in',
-    password: 'password123',
-    company_name: 'Urban Culture Co.',
-    job_title: 'Brand Lead',
-    industry: 'Retail',
-    created_at: new Date(Date.now() - 10 * 86400000).toISOString(),
-  },
-  {
-    recruiter_id: 3,
-    full_name: 'Vikram Malhotra',
-    email: 'vikram@techflow.io',
-    password: 'password123',
-    company_name: 'TechFlow Labs',
-    job_title: 'Engineering Lead',
-    industry: 'Technology',
-    created_at: new Date(Date.now() - 8 * 86400000).toISOString(),
-  },
+const INITIAL_RECRUITERS = [
+  { recruiter_id: 1, full_name: 'Gurpreet Singh', email: 'gurpreet@drteacafe.example', password: 'password123', company_name: 'Dr Tea Cafe', job_title: 'Cafe Manager', industry: 'Food & hospitality', created_at: new Date(Date.now() - 14 * 86400000).toISOString() },
+  { recruiter_id: 2, full_name: 'Mehak Kaur', email: 'mehak@dosahub.example', password: 'password123', company_name: 'Dosa Hub', job_title: 'Shift Supervisor', industry: 'Food & hospitality', created_at: new Date(Date.now() - 10 * 86400000).toISOString() },
 ];
 
-const LEGACY_INITIAL_JOBS = [
-  {
-    id: 1,
-    recruiter_id: 1,
-    title: 'Barista & Café Host',
-    work_type: 'On-site',
-    location: 'Connaught Place, New Delhi',
-    hours: '15–20 hours',
-    pay: '₹250',
-    vacancies: 2,
-    description: 'Join our friendly café team! Flexible morning & afternoon shifts, specialty coffee brewing training, and customer experience skills.',
-    status: 'Active',
-    created_at: new Date(Date.now() - 6 * 86400000).toISOString(),
-  },
-  {
-    id: 2,
-    recruiter_id: 2,
-    title: 'Social Media & Content Creator',
-    work_type: 'Hybrid',
-    location: 'Hauz Khas, New Delhi',
-    hours: '10–15 hours',
-    pay: '₹300',
-    vacancies: 1,
-    description: 'Create engaging short-form reels, lifestyle stories, and campus marketing campaigns with complete schedule flexibility.',
-    status: 'Active',
-    created_at: new Date(Date.now() - 4 * 86400000).toISOString(),
-  },
-  {
-    id: 3,
-    recruiter_id: 3,
-    title: 'Junior Frontend Developer (React)',
-    work_type: 'Remote',
-    location: 'Remote / Pan-India',
-    hours: '15–20 hours',
-    pay: '₹450',
-    vacancies: 3,
-    description: 'Collaborate with our web team building intuitive UI components and responsive student dashboards. Excellent mentorship provided.',
-    status: 'Active',
-    created_at: new Date(Date.now() - 3 * 86400000).toISOString(),
-  },
-  {
-    id: 4,
-    recruiter_id: 1,
-    title: 'Weekend Inventory Coordinator',
-    work_type: 'On-site',
-    location: 'Saket, New Delhi',
-    hours: '5–10 hours',
-    pay: '₹220',
-    vacancies: 1,
-    description: 'Support weekend stock counts, supply deliveries check, and retail shelf organization. Perfect for weekend-only student availability.',
-    status: 'Active',
-    created_at: new Date(Date.now() - 2 * 86400000).toISOString(),
-  },
-  {
-    id: 5,
-    recruiter_id: 2,
-    title: 'Retail Experience Associate',
-    work_type: 'On-site',
-    location: 'Cyber Hub, Gurugram',
-    hours: '10–15 hours',
-    pay: '₹280',
-    vacancies: 2,
-    description: 'Engage shoppers in our lifestyle concept store, manage interactive product showcases, and assist during weekend pop-up events.',
-    status: 'Active',
-    created_at: new Date(Date.now() - 1 * 86400000).toISOString(),
-  },
-  {
-    id: 6,
-    recruiter_id: 3,
-    title: 'UI/UX Design Assistant',
-    work_type: 'Remote',
-    location: 'Remote',
-    hours: '10–15 hours',
-    pay: '₹350',
-    vacancies: 1,
-    description: 'Design intuitive wireframes, Figma prototypes, and user interfaces for digital products. Great portfolio-building role.',
-    status: 'Active',
-    created_at: new Date(Date.now() - 12 * 3600000).toISOString(),
-  },
+const INITIAL_JOBS = [
+  { id: 1, recruiter_id: 1, title: 'Cafe Counter Assistant', work_type: 'On-site', location: 'Village Jansla, near Chitkara University', hours: '15-20 hours', pay: '250', vacancies: 2, description: 'Handle orders, serve beverages, and keep the counter ready during student rush hours. Morning and evening shifts available.', status: 'Active', created_at: new Date(Date.now() - 6 * 86400000).toISOString() },
+  { id: 2, recruiter_id: 2, title: 'Service Crew Member', work_type: 'On-site', location: 'Rajpura-Patiala Highway, near Chitkara', hours: '12-18 hours', pay: '230', vacancies: 1, description: 'Support table service, take orders, and help with takeaway packing during lunch and evening shifts.', status: 'Active', created_at: new Date(Date.now() - 4 * 86400000).toISOString() },
+  { id: 3, recruiter_id: 2, title: 'Kitchen and Service Assistant', work_type: 'On-site', location: 'Rajpura-Patiala Highway, near Chitkara', hours: '10-15 hours', pay: '230', vacancies: 1, description: 'Assist the kitchen team with prep, serve customers, and keep the dining area organised during busy periods.', status: 'Active', created_at: new Date(Date.now() - 3 * 86400000).toISOString() },
+  { id: 4, recruiter_id: 1, title: 'Weekend Cafe Helper', work_type: 'On-site', location: 'Village Jansla, near Chitkara University', hours: '6-10 hours', pay: '220', vacancies: 1, description: 'Help with stock checks, counter clean-up, and takeaway orders on weekend mornings and evenings.', status: 'Active', created_at: new Date(Date.now() - 2 * 86400000).toISOString() },
 ];
 
 const INITIAL_APPLICATIONS = [
@@ -183,69 +52,11 @@ const INITIAL_APPLICATIONS = [
     status: 'Accepted',
     created_at: new Date(Date.now() - 2 * 86400000).toISOString(),
   },
-  {
-    id: 4,
-    job_id: 3,
-    student_id: 3,
-    status: 'Applied',
-    created_at: new Date(Date.now() - 1 * 86400000).toISOString(),
-  },
 ];
 
 const INITIAL_SAVED_JOBS = [
-  { student_id: 1, job_id: 2, created_at: new Date().toISOString() },
   { student_id: 1, job_id: 3, created_at: new Date().toISOString() },
-];
-
-const LEGACY_INITIAL_MESSAGES = [
-  {
-    id: 1,
-    application_id: 3,
-    sender_id: 2,
-    sender_role: 'Recruiter',
-    sender_name: 'Ananya Sen',
-    text: 'Hi Rahul! We reviewed your profile and loved your creative background. We would love to discuss having you join our content team!',
-    created_at: new Date(Date.now() - 1 * 86400000).toISOString(),
-  },
-  {
-    id: 2,
-    application_id: 3,
-    sender_id: 1,
-    sender_role: 'Student',
-    sender_name: 'Rahul Sharma',
-    text: 'Hello Ananya! Thank you so much for accepting my application. I am excited to contribute to Urban Culture Co. When would be a good time to connect?',
-    created_at: new Date(Date.now() - 18 * 3600000).toISOString(),
-  },
-  {
-    id: 3,
-    application_id: 3,
-    sender_id: 2,
-    sender_role: 'Recruiter',
-    sender_name: 'Ananya Sen',
-    text: 'Are you available this Friday around 3:00 PM for a short 15-minute intro call?',
-    created_at: new Date(Date.now() - 4 * 3600000).toISOString(),
-  },
-];
-
-const INITIAL_STUDENTS = [
-  { id: 1, full_name: 'Rahul Sharma', email: 'rahul@example.com', password: 'password123', college: 'Chitkara University, Punjab Campus', course: 'BCA', availability: 'Weekdays', created_at: new Date(Date.now() - 7 * 86400000).toISOString() },
-  { id: 2, full_name: 'Priya Patel', email: 'priya@example.com', password: 'password123', college: 'Chitkara University, Punjab Campus', course: 'BBA Marketing', availability: 'Weekends', created_at: new Date(Date.now() - 5 * 86400000).toISOString() },
-  { id: 3, full_name: 'Aarav Mehta', email: 'aarav@example.com', password: 'password123', college: 'Chitkara University, Punjab Campus', course: 'B.Des User Experience', availability: 'Both', created_at: new Date(Date.now() - 3 * 86400000).toISOString() },
-];
-
-const INITIAL_RECRUITERS = [
-  { recruiter_id: 1, full_name: 'Gurpreet Singh', email: 'gurpreet@drteacafe.example', password: 'password123', company_name: 'Dr Tea Cafe', job_title: 'Cafe Manager', industry: 'Food & hospitality', created_at: new Date(Date.now() - 14 * 86400000).toISOString() },
-  { recruiter_id: 2, full_name: 'Mehak Kaur', email: 'mehak@dosahub.example', password: 'password123', company_name: 'Dosa Hub', job_title: 'Shift Supervisor', industry: 'Food & hospitality', created_at: new Date(Date.now() - 10 * 86400000).toISOString() },
-  { recruiter_id: 3, full_name: 'Arshdeep Singh', email: 'arshdeep@bevcafe.example', password: 'password123', company_name: 'Bev Cafe - CU Punjab', job_title: 'Outlet Supervisor', industry: 'Food & hospitality', created_at: new Date(Date.now() - 8 * 86400000).toISOString() },
-];
-
-const INITIAL_JOBS = [
-  { id: 1, recruiter_id: 1, title: 'Cafe Counter Assistant', work_type: 'On-site', location: 'Village Jansla, near Chitkara University', hours: '15-20 hours', pay: '250', vacancies: 2, description: 'Handle orders, serve beverages, and keep the counter ready during student rush hours. Morning and evening shifts available.', status: 'Active', created_at: new Date(Date.now() - 6 * 86400000).toISOString() },
-  { id: 2, recruiter_id: 2, title: 'Service Crew Member', work_type: 'On-site', location: 'Rajpura-Patiala Highway, near Chitkara', hours: '12-18 hours', pay: '230', vacancies: 1, description: 'Support table service, take orders, and help with takeaway packing during lunch and evening shifts.', status: 'Active', created_at: new Date(Date.now() - 4 * 86400000).toISOString() },
-  { id: 3, recruiter_id: 2, title: 'Kitchen and Service Assistant', work_type: 'On-site', location: 'Rajpura-Patiala Highway, near Chitkara', hours: '10-15 hours', pay: '230', vacancies: 1, description: 'Assist the kitchen team with prep, serve customers, and keep the dining area organised during busy periods.', status: 'Active', created_at: new Date(Date.now() - 3 * 86400000).toISOString() },
-  { id: 4, recruiter_id: 1, title: 'Weekend Cafe Helper', work_type: 'On-site', location: 'Village Jansla, near Chitkara University', hours: '6-10 hours', pay: '220', vacancies: 1, description: 'Help with stock checks, counter clean-up, and takeaway orders on weekend mornings and evenings.', status: 'Active', created_at: new Date(Date.now() - 2 * 86400000).toISOString() },
-  { id: 5, recruiter_id: 3, title: 'Campus Cafe Crew', work_type: 'On-site', location: 'Chitkara University, Rajpura', hours: '10-15 hours', pay: '240', vacancies: 2, description: 'Prepare cold drinks, manage the counter, and help fellow students during between-class rushes.', status: 'Active', created_at: new Date(Date.now() - 1 * 86400000).toISOString() },
-  { id: 6, recruiter_id: 3, title: 'Evening Counter Associate', work_type: 'On-site', location: 'Chitkara University, Rajpura', hours: '8-12 hours', pay: '240', vacancies: 1, description: 'Take orders, prepare simple beverages, and close the counter after evening classes.', status: 'Active', created_at: new Date(Date.now() - 12 * 3600000).toISOString() },
+  { student_id: 1, job_id: 4, created_at: new Date().toISOString() },
 ];
 
 const INITIAL_MESSAGES = [
@@ -280,7 +91,9 @@ function migrateDemoData() {
   replaceSeededRecords(STORAGE_KEYS.STUDENTS, INITIAL_STUDENTS, 'id');
   replaceSeededRecords(STORAGE_KEYS.RECRUITERS, INITIAL_RECRUITERS, 'recruiter_id');
   replaceSeededRecords(STORAGE_KEYS.JOBS, INITIAL_JOBS, 'id');
+  replaceSeededRecords(STORAGE_KEYS.APPLICATIONS, INITIAL_APPLICATIONS, 'id');
   replaceSeededRecords(STORAGE_KEYS.MESSAGES, INITIAL_MESSAGES, 'id');
+  setItems(STORAGE_KEYS.SAVED_JOBS, INITIAL_SAVED_JOBS);
   localStorage.setItem(STORAGE_KEYS.DEMO_VERSION, DEMO_DATA_VERSION);
 }
 
