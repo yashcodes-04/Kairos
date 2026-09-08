@@ -182,6 +182,44 @@ export const api = {
     });
   },
 
+  // Auth: Change / Reset Password (Forgot Password)
+  changePassword: async ({ email, role = 'Student', newPassword, confirmPassword }) => {
+    return asyncWrap(() => {
+      const normalizedEmail = (email || '').trim().toLowerCase();
+      if (!normalizedEmail || !newPassword || !confirmPassword) {
+        throw new Error('Please fill in your registered email and new password.');
+      }
+      if (newPassword.length < 6) {
+        throw new Error('New password must be at least 6 characters long.');
+      }
+      if (newPassword !== confirmPassword) {
+        throw new Error('New passwords do not match. Please re-type carefully.');
+      }
+
+      if (role === 'Student') {
+        const students = getItems(STORAGE_KEYS.STUDENTS, INITIAL_STUDENTS);
+        const index = students.findIndex((s) => s.email.toLowerCase() === normalizedEmail);
+        if (index === -1) {
+          throw new Error('No student account found with this registered email address.');
+        }
+
+        students[index] = { ...students[index], password: newPassword };
+        setItems(STORAGE_KEYS.STUDENTS, students);
+        return { success: true, message: 'Password reset successfully! You can now sign in with your new password.' };
+      } else {
+        const recruiters = getItems(STORAGE_KEYS.RECRUITERS, INITIAL_RECRUITERS);
+        const index = recruiters.findIndex((r) => r.email.toLowerCase() === normalizedEmail);
+        if (index === -1) {
+          throw new Error('No recruiter account found with this registered email address.');
+        }
+
+        recruiters[index] = { ...recruiters[index], password: newPassword };
+        setItems(STORAGE_KEYS.RECRUITERS, recruiters);
+        return { success: true, message: 'Password reset successfully! You can now sign in with your new password.' };
+      }
+    });
+  },
+
   // Auth: Register
   register: async (userData) => {
     return asyncWrap(() => {

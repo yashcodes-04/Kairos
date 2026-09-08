@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { api } from '../services/api';
-import { Home, Briefcase, Eye, EyeOff, ArrowRight, Sun, Moon, UserCheck, GraduationCap, Users } from 'lucide-react';
+import { Home, Briefcase, Eye, EyeOff, ArrowRight, Sun, Moon, UserCheck, GraduationCap, Users, KeyRound, X } from 'lucide-react';
 
 export default function LoginPage() {
   const [role, setRole] = useState('Student');
@@ -15,6 +15,18 @@ export default function LoginPage() {
   const [isError, setIsError] = useState(false);
   const [loading, setLoading] = useState(false);
   const [demoOpen, setDemoOpen] = useState(false);
+
+  // Forgot Password State
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotRole, setForgotRole] = useState('Student');
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [newPass, setNewPass] = useState('');
+  const [confirmNewPass, setConfirmNewPass] = useState('');
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotMessage, setForgotMessage] = useState('');
+  const [forgotError, setForgotError] = useState(false);
 
   const { login } = useAuth();
   const { theme, toggleTheme } = useTheme();
@@ -28,6 +40,73 @@ export default function LoginPage() {
     setMessage('');
     setIsError(false);
     setDemoOpen(false);
+  };
+
+  const handleOpenForgot = (e) => {
+    e?.preventDefault();
+    setForgotRole(role);
+    setForgotEmail(email);
+    setNewPass('');
+    setConfirmNewPass('');
+    setForgotMessage('');
+    setForgotError(false);
+    setForgotOpen(true);
+  };
+
+  const handleCloseForgot = () => {
+    setForgotOpen(false);
+    setForgotMessage('');
+  };
+
+  const handleForgotSubmit = async (e) => {
+    e.preventDefault();
+    setForgotMessage('');
+    setForgotError(false);
+
+    if (!forgotEmail.trim() || !newPass || !confirmNewPass) {
+      setForgotError(true);
+      setForgotMessage('Please enter your registered email and new password.');
+      return;
+    }
+
+    if (newPass.length < 6) {
+      setForgotError(true);
+      setForgotMessage('New password must be at least 6 characters long.');
+      return;
+    }
+
+    if (newPass !== confirmNewPass) {
+      setForgotError(true);
+      setForgotMessage('New passwords do not match. Please re-type carefully.');
+      return;
+    }
+
+    setForgotLoading(true);
+    try {
+      const res = await api.changePassword({
+        email: forgotEmail.trim(),
+        role: forgotRole,
+        newPassword: newPass,
+        confirmPassword: confirmNewPass,
+      });
+
+      setForgotError(false);
+      setForgotMessage(res.message || 'Password reset successfully!');
+      setEmail(forgotEmail.trim());
+      setRole(forgotRole);
+      setPassword('');
+
+      setTimeout(() => {
+        setForgotOpen(false);
+        setMessage('Password reset successfully! Please sign in with your new password.');
+        setIsError(false);
+      }, 1500);
+    } catch (err) {
+      setForgotError(true);
+      setForgotMessage(err.message || 'Could not reset password.');
+    } finally {
+      setForgotLoading(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -197,9 +276,23 @@ export default function LoginPage() {
 
             <div className="password-row">
               <label htmlFor="password">Password</label>
-              <a href="#forgot" onClick={(e) => e.preventDefault()}>
+              <button
+                type="button"
+                className="forgot-password-link"
+                onClick={handleOpenForgot}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  font: 'inherit',
+                  fontSize: '13px',
+                  color: 'var(--green)',
+                  cursor: 'pointer',
+                  textDecoration: 'underline'
+                }}
+              >
                 Forgot password?
-              </a>
+              </button>
             </div>
             <div className="password-input">
               <input
@@ -236,6 +329,150 @@ export default function LoginPage() {
           </p>
         </div>
       </section>
+
+      {/* Forgot / Reset Password Modal */}
+      {forgotOpen && (
+        <div className="chat-modal-backdrop" onClick={handleCloseForgot} style={{ zIndex: 1000, display: 'grid', placeItems: 'center', padding: '20px' }}>
+          <div
+            className="forgot-modal-box"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: 'var(--surface)',
+              border: '1px solid var(--line)',
+              borderRadius: '16px',
+              padding: '32px clamp(20px, 4vw, 36px)',
+              maxWidth: '460px',
+              width: '100%',
+              boxShadow: '0 20px 45px rgba(0,0,0,0.22)',
+              position: 'relative',
+              animation: 'fadeUp 0.25s ease-out'
+            }}
+          >
+            <button
+              type="button"
+              onClick={handleCloseForgot}
+              style={{
+                position: 'absolute',
+                top: '18px',
+                right: '18px',
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--muted)',
+                cursor: 'pointer',
+                padding: '6px',
+                borderRadius: '6px',
+                display: 'grid',
+                placeItems: 'center'
+              }}
+              title="Close"
+              aria-label="Close"
+            >
+              <X size={18} />
+            </button>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+              <span style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '50%',
+                background: 'var(--light-green)',
+                color: 'var(--green)',
+                display: 'grid',
+                placeItems: 'center'
+              }}>
+                <KeyRound size={18} />
+              </span>
+              <div>
+                <p className="small-heading" style={{ margin: 0, fontSize: '10px' }}>ACCOUNT SECURITY</p>
+                <h3 style={{ margin: 0, fontSize: '20px', fontFamily: '"Playfair Display", Georgia, serif', fontWeight: 700 }}>Reset Password</h3>
+              </div>
+            </div>
+
+            <p style={{ color: 'var(--muted)', fontSize: '13px', margin: '4px 0 18px', lineHeight: 1.5 }}>
+              Enter your registered email address to set and confirm your new password.
+            </p>
+
+            <form onSubmit={handleForgotSubmit} noValidate>
+              <div className="role-options" style={{ marginBottom: '16px', gridTemplateColumns: '1fr 1fr' }} role="group" aria-label="Account type">
+                <button
+                  type="button"
+                  className={`role-card ${forgotRole === 'Student' ? 'selected' : ''}`}
+                  onClick={() => { setForgotRole('Student'); setForgotMessage(''); }}
+                  style={{ padding: '8px 12px' }}
+                >
+                  <Home size={14} /> <strong>Student</strong>
+                </button>
+                <button
+                  type="button"
+                  className={`role-card ${forgotRole === 'Recruiter' ? 'selected' : ''}`}
+                  onClick={() => { setForgotRole('Recruiter'); setForgotMessage(''); }}
+                  style={{ padding: '8px 12px' }}
+                >
+                  <Briefcase size={14} /> <strong>Recruiter</strong>
+                </button>
+              </div>
+
+              <label htmlFor="forgotEmail">Registered Email</label>
+              <input
+                id="forgotEmail"
+                type="email"
+                placeholder="you@example.com"
+                value={forgotEmail}
+                onChange={(e) => setForgotEmail(e.target.value)}
+                required
+              />
+
+              <label htmlFor="newPass">New Password</label>
+              <div className="password-input">
+                <input
+                  id="newPass"
+                  type={showNewPass ? 'text' : 'password'}
+                  placeholder="At least 6 characters"
+                  value={newPass}
+                  onChange={(e) => setNewPass(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPass(!showNewPass)}
+                  aria-label={showNewPass ? 'Hide password' : 'Show password'}
+                >
+                  {showNewPass ? 'Hide' : 'Show'}
+                </button>
+              </div>
+
+              <label htmlFor="confirmNewPass">Confirm New Password</label>
+              <div className="password-input">
+                <input
+                  id="confirmNewPass"
+                  type={showConfirmPass ? 'text' : 'password'}
+                  placeholder="Re-enter new password"
+                  value={confirmNewPass}
+                  onChange={(e) => setConfirmNewPass(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPass(!showConfirmPass)}
+                  aria-label={showConfirmPass ? 'Hide password' : 'Show password'}
+                >
+                  {showConfirmPass ? 'Hide' : 'Show'}
+                </button>
+              </div>
+
+              <button className="sign-in-button" type="submit" disabled={forgotLoading} style={{ marginTop: '16px' }}>
+                {forgotLoading ? 'Updating password...' : 'Update password'}
+              </button>
+
+              {forgotMessage && (
+                <p className={`message ${forgotError ? 'error-message' : ''}`} style={{ marginTop: '12px' }} aria-live="polite">
+                  {forgotMessage}
+                </p>
+              )}
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
