@@ -9,25 +9,28 @@ export default function Navbar({ workspaceLabel }) {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
-  const [convoCount, setConvoCount] = useState(0);
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  const loadConvoCount = async () => {
+  const loadUnreadCount = async () => {
     if (!user?.id) return;
     try {
       const convos = await api.getConversations(user.id, user.role);
-      setConvoCount(convos?.length || 0);
+      const unread = (convos || []).reduce((sum, c) => sum + (c.unread_count || 0), 0);
+      setUnreadCount(unread);
     } catch (_) {}
   };
 
   useEffect(() => {
-    loadConvoCount();
-    const handleUpdate = () => loadConvoCount();
+    loadUnreadCount();
+    const handleUpdate = () => loadUnreadCount();
     window.addEventListener('kairos_application_updated', handleUpdate);
     window.addEventListener('kairos_message_sent', handleUpdate);
+    window.addEventListener('kairos_messages_seen', handleUpdate);
     window.addEventListener('storage', handleUpdate);
     return () => {
       window.removeEventListener('kairos_application_updated', handleUpdate);
       window.removeEventListener('kairos_message_sent', handleUpdate);
+      window.removeEventListener('kairos_messages_seen', handleUpdate);
       window.removeEventListener('storage', handleUpdate);
     };
   }, [user?.id, user?.role]);
@@ -62,8 +65,8 @@ export default function Navbar({ workspaceLabel }) {
             >
               <MessageSquare size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
               Messages
-              {convoCount > 0 && (
-                <span className="navbar-chat-count">{convoCount}</span>
+              {unreadCount > 0 && (
+                <span className="navbar-chat-count">{unreadCount}</span>
               )}
             </button>
           )}

@@ -798,6 +798,10 @@ export const api = {
 
         const threadMsgs = messages.filter((m) => Number(m.application_id) === Number(app.id));
         const lastMsg = threadMsgs.length > 0 ? threadMsgs[threadMsgs.length - 1] : null;
+        const unreadCount = threadMsgs.filter((m) => {
+          const isIncoming = Number(m.sender_id) !== Number(userId) || m.sender_role !== role;
+          return isIncoming && !m.seen_at;
+        }).length;
 
         return {
           application_id: app.id,
@@ -812,11 +816,46 @@ export const api = {
           recruiter_name: recruiter.full_name || 'Recruiter',
           company_name: recruiter.company_name || 'Company',
           recruiter_email: recruiter.email || '',
+          unread_count: unreadCount,
           last_message: lastMsg ? lastMsg.text : 'Application accepted. Start chatting!',
           last_message_time: lastMsg ? formatDate(lastMsg.created_at) : formatDate(app.created_at),
           message_count: threadMsgs.length,
         };
       });
+    });
+  },
+
+  // Messaging Endpoints: Get unread message count for a user
+  getUnreadMessageCount: async (userId, role) => {
+    return asyncWrap(() => {
+      if (!userId || !role) return 0;
+      const apps = getItems(STORAGE_KEYS.APPLICATIONS, INITIAL_APPLICATIONS);
+      const jobs = getItems(STORAGE_KEYS.JOBS, INITIAL_JOBS);
+      const messages = getItems(STORAGE_KEYS.MESSAGES, INITIAL_MESSAGES);
+
+      let eligibleAppIds = new Set();
+      if (role === 'Recruiter') {
+        const recruiterJobIds = new Set(
+          jobs.filter((j) => Number(j.recruiter_id) === Number(userId)).map((j) => Number(j.id))
+        );
+        apps.forEach((a) => {
+          if (recruiterJobIds.has(Number(a.job_id))) {
+            eligibleAppIds.add(Number(a.id));
+          }
+        });
+      } else {
+        apps.forEach((a) => {
+          if (Number(a.student_id) === Number(userId)) {
+            eligibleAppIds.add(Number(a.id));
+          }
+        });
+      }
+
+      return messages.filter((m) => {
+        const isInApp = eligibleAppIds.has(Number(m.application_id));
+        const isIncoming = Number(m.sender_id) !== Number(userId) || m.sender_role !== role;
+        return isInApp && isIncoming && !m.seen_at;
+      }).length;
     });
   },
 

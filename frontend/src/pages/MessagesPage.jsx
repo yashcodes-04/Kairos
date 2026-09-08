@@ -18,7 +18,29 @@ export default function MessagesPage() {
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
-  const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
+  const isAtBottomRef = useRef(true);
+  const prevAppIdRef = useRef(null);
+
+  const scrollToBottom = (behavior = 'auto') => {
+    if (messagesContainerRef.current) {
+      if (behavior === 'smooth') {
+        messagesContainerRef.current.scrollTo({
+          top: messagesContainerRef.current.scrollHeight,
+          behavior: 'smooth',
+        });
+      } else {
+        messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+      }
+    }
+  };
+
+  const handleScroll = () => {
+    if (!messagesContainerRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+    // Considered at bottom if within 100px of bottom
+    isAtBottomRef.current = scrollHeight - scrollTop - clientHeight < 100;
+  };
 
   const loadConversations = async () => {
     if (!user?.id) return;
@@ -67,7 +89,7 @@ export default function MessagesPage() {
         if (!seenMessages.length) return;
         const seenIds = new Set(seenMessages.map((message) => message.id));
         setMessages((previous) => previous.map((message) => seenIds.has(message.id) ? { ...message, seen_at: seenMessages.find((item) => item.id === message.id)?.seen_at } : message));
-        loadMessages();
+        loadConversations();
       })
       .catch((err) => console.error('Failed to mark messages as seen:', err));
   }, [activeAppId, user?.id, user?.role]);
@@ -92,6 +114,7 @@ export default function MessagesPage() {
       if (seenIds.size) {
         setMessages((previous) => previous.map((message) => seenIds.has(message.id) ? { ...message, seen_at: seenMessages.find((item) => item.id === message.id)?.seen_at } : message));
       }
+      loadConversations();
     };
     window.addEventListener('kairos_message_sent', handleIncomingMessage);
     window.addEventListener('kairos_messages_seen', handleMessagesSeen);
@@ -104,8 +127,14 @@ export default function MessagesPage() {
   }, [activeAppId, user?.id]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    if (activeAppId !== prevAppIdRef.current) {
+      prevAppIdRef.current = activeAppId;
+      isAtBottomRef.current = true;
+      setTimeout(() => scrollToBottom('auto'), 40);
+    } else if (isAtBottomRef.current) {
+      scrollToBottom('smooth');
+    }
+  }, [messages, activeAppId]);
 
   const currentConversation = conversations.find((item) => Number(item.application_id) === Number(activeAppId)) || recipientInfo;
   const otherPersonName = user?.role === 'Recruiter'
@@ -133,9 +162,11 @@ export default function MessagesPage() {
         senderName: user.name || (user.role === 'Recruiter' ? user.company : 'Student'),
         text,
       });
+      isAtBottomRef.current = true;
       setMessages((previous) => previous.some((message) => message.id === newMessage.id) ? previous : [...previous, newMessage]);
       setInputText('');
       loadConversations();
+      setTimeout(() => scrollToBottom('smooth'), 40);
     } catch (err) {
       console.error('Error sending message:', err);
     } finally {
@@ -166,6 +197,7 @@ export default function MessagesPage() {
           ) : conversations.map((conversation) => {
             const isActive = Number(conversation.application_id) === Number(activeAppId);
             const name = user?.role === 'Recruiter' ? conversation.student_name : conversation.company_name;
+            const unread = Number(conversation.unread_count || 0);
             return (
               <button
                 key={conversation.application_id}
@@ -174,7 +206,13 @@ export default function MessagesPage() {
                 onClick={() => setActiveAppId(conversation.application_id)}
               >
                 <span className="conversation-avatar">{user?.role === 'Recruiter' ? <GraduationCap size={17} /> : <Building size={17} />}</span>
-                <span className="conversation-list-copy"><strong>{name}</strong><small>{conversation.job_title}</small></span>
+                <span className="conversation-list-copy">
+                  <strong>{name}</strong>
+                  <small>{conversation.job_title}</small>
+                </span>
+                {unread > 0 && !isActive && (
+                  <span className="conversation-unread-badge">{unread}</span>
+                )}
               </button>
             );
           })}
@@ -186,13 +224,12 @@ export default function MessagesPage() {
               <span className="conversation-avatar">{user?.role === 'Recruiter' ? <GraduationCap size={18} /> : <Building size={18} />}</span>
               <div><h2>{otherPersonName}</h2><p>{otherPersonSub}</p></div>
             </div>
-            <div className="messages-stream">
+            <div className="messages-stream" ref={messagesContainerRef} onScroll={handleScroll}>
               {loading ? <p className="messages-status">Loading messages...</p> : messages.length === 0 ? <p className="messages-status">Start the conversation.</p> : messages.map((message) => {
                 const isOwn = Number(message.sender_id) === Number(user?.id) && message.sender_role === user?.role;
                 const receipt = message.seen_at ? 'Seen' : 'Delivered';
                 return <div key={message.id || `${message.created_at}-${message.sender_id}`} className={`message-row ${isOwn ? 'own' : 'other'}`}><div className="message-bubble"><strong>{isOwn ? 'You' : message.sender_name}</strong><span>{message.text}</span><small><Clock size={11} />{formatMsgTime(message.created_at)}{isOwn && <span className={`message-receipt ${message.seen_at ? 'seen' : ''}`}>{message.seen_at ? <CheckCheck size={12} /> : <Check size={12} />}{receipt}</span>}</small></div></div>;
               })}
-              <div ref={messagesEndRef} />
             </div>
             <form className="messages-composer" onSubmit={handleSend}>
               <input type="text" value={inputText} onChange={(event) => setInputText(event.target.value)} placeholder="Write a message..." disabled={sending} autoFocus />
