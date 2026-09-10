@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mail, Users, Trash2, Power, MessageSquare, Check } from 'lucide-react';
+import { Mail, Users, Trash2, Power, Check } from 'lucide-react';
 
 export default function JobCardRecruiter({
   job,
@@ -7,7 +7,6 @@ export default function JobCardRecruiter({
   onToggleStatus,
   onDeleteJob,
   onAcceptApplicant,
-  onOpenChat,
 }) {
   const jobApps = applications.filter((app) => app.job_id === job.id);
   const vacanciesCount = Number(job.vacancies || 1);
@@ -93,7 +92,7 @@ export default function JobCardRecruiter({
                   </div>
 
                   <div className="applicant-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                    {!isAccepted ? (
+                    {!isAccepted && (
                       <button
                         type="button"
                         className="accept-applicant-btn"
@@ -102,16 +101,6 @@ export default function JobCardRecruiter({
                       >
                         <Check size={13} style={{ marginRight: '4px' }} />
                         Accept Application
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        className="chat-applicant-btn"
-                        onClick={() => onOpenChat && onOpenChat(app)}
-                        title="Open direct chat with this student"
-                      >
-                        <MessageSquare size={13} style={{ marginRight: '4px' }} />
-                        Chat with {app.student_name.split(' ')[0]}
                       </button>
                     )}
 

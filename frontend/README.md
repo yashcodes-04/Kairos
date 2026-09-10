@@ -1,11 +1,11 @@
 # Kairos Frontend
 
-This is the standalone React application for Kairos.
+This is the standalone React application for **Kairos** — Student & Recruiter Part-Time Job Portal.
 
-## Running the app
+## 🚀 Running the App
 ```bash
 npm install
 npm run dev
 ```
 
-For full evaluation details and demo credentials, refer to the [Root README](../README.md).
+For complete evaluation guidelines, demo accounts, feature breakdown, and roadmap, please see the [Root README](../README.md).

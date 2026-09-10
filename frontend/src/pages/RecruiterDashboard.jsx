@@ -1,14 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import JobCardRecruiter from '../components/JobCardRecruiter';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
-import { PlusCircle, Filter, ArrowRight, RefreshCw, CheckCircle2, MessageSquare } from 'lucide-react';
+import { PlusCircle, Filter, ArrowRight, RefreshCw } from 'lucide-react';
 
 export default function RecruiterDashboard() {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [jobs, setJobs] = useState([]);
   const [applications, setApplications] = useState([]);
   const [activeOnly, setActiveOnly] = useState(false);
@@ -67,19 +65,10 @@ export default function RecruiterDashboard() {
       setApplications((prev) =>
         prev.map((a) => (a.application_id === applicationId ? { ...a, status: 'Accepted' } : a))
       );
-      // Auto open chat with accepted applicant
-      const targetApp = applications.find((a) => a.application_id === applicationId);
-      if (targetApp) {
-        navigate('/messages', { state: { applicationId, recipientInfo: targetApp } });
-      }
     } catch (err) {
       console.error('Error accepting applicant:', err);
       loadData();
     }
-  };
-
-  const handleOpenChat = (application) => {
-    navigate('/messages', { state: { applicationId: application.application_id, recipientInfo: application } });
   };
 
   const handlePostJob = async (e) => {
@@ -341,7 +330,6 @@ export default function RecruiterDashboard() {
                     onToggleStatus={handleToggleStatus}
                     onDeleteJob={handleDeleteJob}
                     onAcceptApplicant={handleAcceptApplicant}
-                    onOpenChat={handleOpenChat}
                   />
                 ))}
               </div>

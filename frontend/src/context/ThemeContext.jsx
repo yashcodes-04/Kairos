@@ -3,12 +3,9 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 const ThemeContext = createContext(null);
 
 export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('kairosTheme') || 'light';
-  });
+  const [theme, setTheme] = useState('light');
 
   useEffect(() => {
-    localStorage.setItem('kairosTheme', theme);
     if (theme === 'dark') {
       document.body.classList.add('dark-theme');
     } else {

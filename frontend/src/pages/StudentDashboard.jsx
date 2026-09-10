@@ -1,14 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import JobCardStudent from '../components/JobCardStudent';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
-import { Search, Sparkles, Compass, CheckCircle2, Bookmark, RefreshCw, MessageSquare, Check, FileText } from 'lucide-react';
+import { Search, Sparkles, Bookmark, RefreshCw, FileText } from 'lucide-react';
 
 export default function StudentDashboard() {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [jobs, setJobs] = useState([]);
   const [savedJobIds, setSavedJobIds] = useState([]);
   const [studentApplications, setStudentApplications] = useState([]);
@@ -102,15 +100,7 @@ export default function StudentDashboard() {
     }
   };
 
-  const handleOpenChat = (application, job) => {
-    const appId = application?.application_id || application?.id;
-    navigate('/messages', { state: { applicationId: appId, recipientInfo: {
-      application_id: appId,
-      job_title: job?.title || application?.job_title,
-      company_name: job?.company || application?.company_name,
-      recruiter_name: job?.recruiter_name || application?.recruiter_name,
-    } } });
-  };
+
 
   const filteredJobs = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
@@ -294,7 +284,6 @@ export default function StudentDashboard() {
                     isSaved={savedJobIds.includes(job.id)}
                     onToggleApply={handleToggleApply}
                     onToggleSave={handleToggleSave}
-                    onOpenChat={handleOpenChat}
                   />
                 );
               })}
@@ -316,8 +305,8 @@ export default function StudentDashboard() {
           </div>
           <div>
             <b>3</b>
-            <h3>Chat directly once accepted</h3>
-            <p>Connect seamlessly with employers to finalize your shift.</p>
+            <h3>Get notified on acceptance</h3>
+            <p>Employers accept your application and contact you directly.</p>
           </div>
         </section>
       </main>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Clock, IndianRupee, Mail, Star, Check, MessageSquare, Sparkles } from 'lucide-react';
+import { MapPin, Clock, IndianRupee, Mail, Star, Check, Sparkles } from 'lucide-react';
 
 export default function JobCardStudent({
   job,
@@ -8,7 +8,6 @@ export default function JobCardStudent({
   application,
   onToggleApply,
   onToggleSave,
-  onOpenChat,
 }) {
   const vacanciesCount = Number(job.vacancies || 1);
   const vacancyLabel = vacanciesCount === 1 ? '1 opening' : `${vacanciesCount} openings`;
@@ -67,7 +66,7 @@ export default function JobCardStudent({
       {isAccepted && (
         <div className="student-accepted-callout">
           <strong>Application Accepted!</strong>
-          <p>The hiring team accepted your application. Start a conversation to arrange shifts & onboarding.</p>
+          <p>The hiring team accepted your application. You will be contacted via your registered email.</p>
         </div>
       )}
 
@@ -75,12 +74,11 @@ export default function JobCardStudent({
         {isAccepted ? (
           <button
             type="button"
-            className="interest-button student-chat-action-btn"
-            onClick={() => onOpenChat && onOpenChat(application, job)}
+            className="interest-button apply-button saved"
+            disabled
             style={{ flex: 2, marginTop: 0 }}
           >
-            <MessageSquare size={14} style={{ marginRight: '5px', verticalAlign: 'middle' }} />
-            Chat with {job.company || 'Employer'}
+            <Check size={14} style={{ marginRight: '4px', verticalAlign: 'middle' }} /> Application Accepted
           </button>
         ) : (
           <button
