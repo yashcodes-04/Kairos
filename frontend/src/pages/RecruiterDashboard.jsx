@@ -15,8 +15,6 @@ export default function RecruiterDashboard() {
   const [jobMessage, setJobMessage] = useState('');
   const [isJobError, setIsJobError] = useState(false);
 
-  // Chat State
-
   // Form State
   const [title, setTitle] = useState('');
   const [workType, setWorkType] = useState('');

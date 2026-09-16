@@ -32,6 +32,8 @@ export default function LoginPage() {
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
+  const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+
   const handleFillDemo = (demoRole, demoEmail, demoPass, demoCompany = '') => {
     setRole(demoRole);
     setEmail(demoEmail);
@@ -66,6 +68,12 @@ export default function LoginPage() {
     if (!forgotEmail.trim() || !newPass || !confirmNewPass) {
       setForgotError(true);
       setForgotMessage('Please enter your registered email and new password.');
+      return;
+    }
+
+    if (!isValidEmail(forgotEmail)) {
+      setForgotError(true);
+      setForgotMessage('Email must contain @ and a dot after it.');
       return;
     }
 
@@ -117,6 +125,12 @@ export default function LoginPage() {
     if (!email || !password || (role === 'Recruiter' && !company.trim())) {
       setIsError(true);
       setMessage('Please enter all required login details.');
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      setIsError(true);
+      setMessage('Email must contain @ and a dot after it.');
       return;
     }
 

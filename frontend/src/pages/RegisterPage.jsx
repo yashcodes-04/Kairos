@@ -31,6 +31,8 @@ export default function RegisterPage() {
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
+  const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage('');
@@ -39,6 +41,12 @@ export default function RegisterPage() {
     if (!fullName || !email || !password) {
       setIsError(true);
       setMessage('Please complete all required fields.');
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      setIsError(true);
+      setMessage('Email must contain @ and a dot after it.');
       return;
     }
 

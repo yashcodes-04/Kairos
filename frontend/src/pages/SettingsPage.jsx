@@ -17,6 +17,8 @@ export default function SettingsPage() {
   const homePath = user?.role === 'Recruiter' ? '/recruiter' : '/student';
   const isRecruiter = user?.role === 'Recruiter';
 
+  const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+
   useEffect(() => {
     if (!user?.id) return;
     api.getProfile(user.id, user.role)
@@ -29,8 +31,21 @@ export default function SettingsPage() {
 
   const handleSave = async (event) => {
     event.preventDefault();
-    setSaving(true);
     setMessage('');
+
+    if (!profile.name.trim() || !profile.email.trim()) {
+      setIsError(true);
+      setMessage('Please complete your name and email fields.');
+      return;
+    }
+
+    if (!isValidEmail(profile.email)) {
+      setIsError(true);
+      setMessage('Email must contain @ and a dot after it.');
+      return;
+    }
+
+    setSaving(true);
     try {
       const updatedUser = await api.updateProfile({ userId: user.id, role: user.role, profile });
       login(updatedUser);
