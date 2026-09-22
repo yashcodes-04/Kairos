@@ -17,7 +17,7 @@ export default function Navbar({ workspaceLabel }) {
   return (
     <header className="dashboard-header">
       <Link to={user?.role === 'Recruiter' ? '/recruiter' : '/student'} className="dashboard-brand">
-        <img src="/favicon.png" alt="Kairos" className="dashboard-brand-logo-img" />
+        <img src={`${import.meta.env.BASE_URL}favicon.png`} alt="Kairos" className="dashboard-brand-logo-img" />
         <span>Kairos<span className="brand-dot">.</span></span>
       </Link>
 

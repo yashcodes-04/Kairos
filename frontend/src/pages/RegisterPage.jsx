@@ -123,7 +123,7 @@ export default function RegisterPage() {
       {/* Left Welcome Panel */}
       <section className="welcome-panel">
         <Link className="brand" to="/login">
-          <img src="/favicon.png" alt="Kairos" className="brand-logo-img" />
+          <img src={`${import.meta.env.BASE_URL}favicon.png`} alt="Kairos" className="brand-logo-img" />
           <span>Kairos<span className="brand-dot">.</span></span>
         </Link>
 
