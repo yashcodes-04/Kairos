@@ -15,8 +15,6 @@ export default function StudentDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Chat State
-
   const firstName = user?.name ? user.name.split(' ')[0] : 'Student';
 
   const loadData = async () => {
