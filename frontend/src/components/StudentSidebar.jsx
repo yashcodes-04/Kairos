@@ -1,15 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { BookOpen, BriefcaseBusiness, CalendarCheck2, ChevronDown, ChevronRight, FilePenLine, FileText, LayoutDashboard, LogOut, Moon, PlusCircle, Presentation, Settings, Sun, UserRound } from 'lucide-react';
+import { BookOpen, BriefcaseBusiness, CalendarCheck2, ChevronDown, ChevronRight, FilePenLine, FileText, LayoutDashboard, LogOut, PlusCircle, Presentation, Settings, UserRound } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
-import { useTheme } from '../context/ThemeContext';
 
 export default function StudentSidebar({ activePage, onChange }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [needsPortfolio, setNeedsPortfolio] = useState(false);
   const { user, logout } = useAuth();
-  const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const signOut = () => { logout(); navigate('/login'); };
 
@@ -58,10 +56,6 @@ export default function StudentSidebar({ activePage, onChange }) {
           <button type="button" onClick={() => navigate('/settings', { state: navState })}><Settings size={15} /> Account</button>
           <button type="button" onClick={() => navigate('/portfolio/edit', { state: navState })}><FilePenLine size={15} /> Edit portfolio</button>
           <button type="button" onClick={() => navigate('/profile', { state: navState })}><UserRound size={15} /> View portfolio</button>
-          <div className="sidebar-theme-row">
-            <button type="button" className={`sidebar-theme-option${theme === 'light' ? ' active' : ''}`} onClick={() => setTheme('light')} aria-pressed={theme === 'light'}><Sun size={13} /> Light</button>
-            <button type="button" className={`sidebar-theme-option${theme === 'dark' ? ' active' : ''}`} onClick={() => setTheme('dark')} aria-pressed={theme === 'dark'}><Moon size={13} /> Dark</button>
-          </div>
           <button type="button" className="sidebar-logout" onClick={signOut}><LogOut size={15} /> Log out <small>Ctrl + B</small></button>
         </div>}
       </div>
