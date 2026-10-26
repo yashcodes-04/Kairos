@@ -8880,32 +8880,4 @@ body {
     display: inline-flex !important;
   }
 }
-
-/* Navbar theme switch */
-.header-theme-switch {
-  margin-left: 10px;
-  display: inline-flex;
-  gap: 4px;
-  padding: 3px;
-  border: 1px solid #a7cbbd;
-  border-radius: 999px;
-  background: var(--surface);
-}
-.header-theme-option {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 6px 11px;
-  border: 0;
-  border-radius: 999px;
-  color: var(--muted);
-  background: transparent;
-  font: 700 12px "DM Sans", sans-serif;
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-}
-.header-theme-option:hover { color: var(--green); background: var(--light-green); }
-.header-theme-option.active { color: #fff; background: var(--green); }
-.dark-theme .header-theme-switch { background: #161b22; border-color: #2d333b; }
-.dark-theme .header-theme-option:hover { background: #252d38; }
-.dark-theme .header-theme-option.active { color: #fff; background: var(--green); }
+

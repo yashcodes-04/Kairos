@@ -69,6 +69,10 @@ export default function RecruiterSidebar({ activePage, onChange, pendingCount = 
             <button type="button" onClick={() => navigate('/settings')}>
               <UserRound size={15} /> Edit profile
             </button>
+            <div className="sidebar-theme-row">
+              <button type="button" className={`sidebar-theme-option${theme === 'light' ? ' active' : ''}`} onClick={() => setTheme('light')} aria-pressed={theme === 'light'}><Sun size={13} /> Light</button>
+              <button type="button" className={`sidebar-theme-option${theme === 'dark' ? ' active' : ''}`} onClick={() => setTheme('dark')} aria-pressed={theme === 'dark'}><Moon size={13} /> Dark</button>
+            </div>
             <button type="button" className="sidebar-logout" onClick={signOut}>
               <LogOut size={15} /> Log out <small>Ctrl + B</small>
             </button>
