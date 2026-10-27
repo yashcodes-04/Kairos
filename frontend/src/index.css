@@ -263,7 +263,11 @@ body {
 
 .student-sidebar {
   position: sticky;
-  top: 99px;
+  top: 96px;
+  align-self: start;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  scrollbar-width: thin;
   margin-top: 48px;
   padding: 18px 12px;
   border: 1px solid var(--line);
@@ -7208,7 +7212,11 @@ textarea {
 
 .recruiter-sidebar {
   position: sticky;
-  top: 99px;
+  top: 96px;
+  align-self: start;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  scrollbar-width: thin;
   margin-top: 48px;
   padding: 18px 12px;
   border: 1px solid var(--line);
@@ -8233,7 +8241,7 @@ textarea {
 html,
 body {
   max-width: 100vw;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 @media (max-width: 860px) {
@@ -8880,4 +8888,4 @@ body {
     display: inline-flex !important;
   }
 }
-
+
