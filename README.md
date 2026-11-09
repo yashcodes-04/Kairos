@@ -2,15 +2,15 @@
 
 A modern, responsive, 100% React-based web application connecting college students seeking flexible part-time work and peer skill exchange with local recruiters and employers.
 
-Built with **Vite + React 19**, **React Router v7**, **Redux Toolkit**, and **Vanilla CSS** featuring state-driven architecture, dynamic filtering, dark/light theme switching, and role-based workspaces.
+Built with **Vite + React 19**, **React Router v7**, **Redux Toolkit**, **Razorpay Payment Integration**, and **Vanilla CSS** featuring state-driven architecture, dynamic filtering, dark/light theme switching, and role-based workspaces.
 
 ---
 
 ## 📚 Architectural & Workflow Documentation
 
 For detailed technical diagrams and execution flows, see:
-- 📖 [**FLOW.md**](./FLOW.md) — End-to-end user journeys, application state lifecycles, and sequence diagrams.
-- 🔗 [**HOW_PROJECT_CONNECTS.md**](./HOW_PROJECT_CONNECTS.md) — Technical architecture, provider hierarchy, Redux/Context state layers, and component wiring.
+- 📖 [**FLOW.md**](./FLOW.md) — End-to-end user journeys, payment & refund lifecycle, application state lifecycles, and sequence diagrams.
+- 🔗 [**HOW_PROJECT_CONNECTS.md**](./HOW_PROJECT_CONNECTS.md) — Technical architecture, provider hierarchy, Redux/Context state layers, Razorpay integration, and component wiring.
 
 ---
 
@@ -19,7 +19,13 @@ For detailed technical diagrams and execution flows, see:
 ### 1. Prerequisites
 Ensure you have [Node.js](https://nodejs.org/) installed (v18 or higher recommended).
 
-### 2. Setup & Start
+### 2. Environment Setup (Optional for Payments)
+In the `frontend` folder, create a `.env` file (see [`.env.example`](./frontend/.env.example)):
+```env
+VITE_RAZORPAY_KEY_ID=rzp_test_YourKeyHere
+```
+
+### 3. Setup & Start
 ```bash
 # Navigate to the frontend directory
 cd frontend
@@ -63,17 +69,17 @@ The project includes pre-configured demo accounts for both roles with instant on
 ### 🎓 Student Workspace (`/#/student`)
 - **Live Job Discovery**: Browse campus and local part-time opportunities with search, status filters (All, Applied, Accepted, Rejected, Saved), pay rates, and hours.
 - **Job Details & Apply**: Dedicated role overview with quick apply, live status updates, and clear feedback if an application was accepted or declined.
-- **My Applications**: Track all submitted roles with color-coded status badges (`Under Review`, `Accepted`, or `Rejected`).
+- **My Applications**: Track all submitted roles with color-coded status badges (`Under Review`, `Accepted`, or `Rejected`). Auto-rejected applications when vacancies are filled display clear "Positions Filled" badges.
 - **Student Portfolio & Resume**:
-  - Clean bio, academic credentials, and taggable skill badges (no intrusive tips).
+  - Clean bio, academic credentials, and taggable skill badges.
   - Showcase GitHub and live project links.
   - Upload and download resume files.
-- **Peer Skill Exchange**:
-  - Discover micro-workshops hosted by fellow students (React, Figma, Interview prep).
-  - View host profile directly from the session card footer with seamless return navigation back to Skill Exchange.
-  - One-click seat booking and booking cancellation.
-  - Host your own skill session with custom schedule, tags, and capacity.
-  - **Attendee-Only Meeting Links**: Hosts can click **"Provide link"** in "My sessions" to share a meeting URL. An instant push notification is delivered to all enrolled learners, and a **"Join meeting"** button unlocks in their "Booked sessions" (unbooked students or before link provision see *"Link will be given to you soon."*).
+- **Peer Skill Exchange & Razorpay Integration**:
+  - Discover micro-workshops hosted by fellow students (React, Figma, Interview prep) with custom fee badges (`Free` or paid `₹99`, `₹199`).
+  - **Razorpay Checkout**: Seamless client-side checkout popup with support for UPI, Cards, and Netbanking in test mode.
+  - **Cancellation & Instant Refund Simulation**: Cancel unfinalized bookings anytime. If paid, an instant refund is initiated with a confirmation modal, mock Refund ID (`rfnd_...`), and a notification notice (`₹XX will be credited back in 2-3 working hours`).
+  - **Upcoming vs. History Tab**: In "Booked sessions", view active upcoming sessions or review past cancelled sessions with complete refund tracking data.
+  - **Attendee-Only Meeting Links**: Hosts can click **"Provide link"** in "My sessions" to share a meeting URL. An instant push notification is delivered to enrolled learners, and a **"Join meeting"** button unlocks in their "Booked sessions" (cancellation is locked once links are provided).
 
 ### 🏢 Recruiter Workspace (`/#/recruiter`)
 - **Unified Two-Column Dashboard**:
@@ -92,10 +98,10 @@ The project includes pre-configured demo accounts for both roles with instant on
   - Quick **Account** settings link, portfolio shortcuts, **Light / Dark theme** toggles, and sign out.
   - Keyboard shortcut: <kbd>Ctrl</kbd> + <kbd>B</kbd> to quickly log out.
 - **Notification System**:
-  - In-app floating toast alerts for actions (job published, applicant accepted/rejected, session booked).
+  - In-app floating toast alerts for actions (job published, applicant accepted/rejected, session booked, refund initiated).
   - Top header notification popover with unread counter and "Read all" action.
 - **Cross-Component Synchronization**:
-  - Custom event bus and `localStorage` persistence synchronize application updates and listings across tabs and components without page reloads.
+  - Custom event bus and `localStorage` persistence synchronize application updates, bookings, and listings across tabs and components without page reloads.
 
 ---
 
@@ -120,8 +126,8 @@ frontend/
 │   │   ├── NotificationContext.jsx # Toast & notification center state
 │   │   └── ThemeContext.jsx     # Dark / Light theme state
 │   ├── pages/
-│   │   ├── BookedSessionsPage.jsx  # Student booked peer sessions
-│   │   ├── CreateSessionPage.jsx  # Host a peer skill session
+│   │   ├── BookedSessionsPage.jsx  # Student booked peer sessions & refund history
+│   │   ├── CreateSessionPage.jsx  # Host a peer skill session with fee option
 │   │   ├── EditPortfolioPage.jsx  # Portfolio & resume editor
 │   │   ├── JobDetailsPage.jsx     # Full job details view
 │   │   ├── LandingPage.jsx        # Public landing & feature showcase
@@ -133,7 +139,7 @@ frontend/
 │   │   ├── RecruiterDashboard.jsx # Merged post+listings & applicants
 │   │   ├── RegisterPage.jsx       # Dual-role account registration
 │   │   ├── SettingsPage.jsx       # Profile edit and preferences
-│   │   ├── SkillExchangePage.jsx  # Peer skill exchange discovery
+│   │   ├── SkillExchangePage.jsx  # Peer skill exchange discovery & booking
 │   │   ├── StudentDashboard.jsx   # Student job discovery center
 │   │   └── StudentProfilePage.jsx # Public student portfolio view
 │   ├── services/
@@ -142,9 +148,12 @@ frontend/
 │   │   ├── jobsSlice.js         # Redux Toolkit slice for job listings
 │   │   ├── sessionsSlice.js     # Redux Toolkit slice for skill sessions
 │   │   └── store.js             # Root Redux store configuration
+│   ├── utils/
+│   │   └── razorpay.js          # Razorpay checkout SDK dynamic loader & modal trigger
 │   ├── App.jsx                  # Main router and provider tree
 │   ├── index.css                # Vanilla CSS design system & dark theme tokens
 │   └── main.jsx                 # Vite application entry point
+├── .env.example                 # Example environment variables template
 ├── package.json
 └── vite.config.js
 ```
@@ -156,5 +165,6 @@ frontend/
 - **Framework**: React 19 + Vite 8
 - **Routing**: React Router v7 (`HashRouter`)
 - **State Management**: Redux Toolkit + React Context API
+- **External Integration**: Razorpay Payment Gateway Checkout API
 - **Icons**: Lucide React
 - **Styling**: Vanilla CSS (CSS variables, Dark mode, Responsive flex/grid)

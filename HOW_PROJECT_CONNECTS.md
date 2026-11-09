@@ -1,6 +1,6 @@
 # How the Kairos Project Connects: Architecture & Component Wiring
 
-This document explains the technical architecture, component tree, provider hierarchy, state management layers, and communication mechanisms of the Kairos frontend application.
+This document explains the technical architecture, component tree, provider hierarchy, state management layers, Razorpay payment flow, and communication mechanisms of the Kairos frontend application.
 
 ---
 
@@ -37,7 +37,13 @@ graph TD
         RecruiterDash --> RecruiterSidebar[RecruiterSidebar.jsx]
         StudentDash --> JobCardStudent[JobCardStudent.jsx]
         RecruiterDash --> JobCardRecruiter[JobCardRecruiter.jsx]
+        StudentDash --> SessionForm[SessionForm.jsx]
         HashRouter --> ToastRegion[ToastRegion.jsx]
+    end
+
+    subgraph PaymentLayer ["Payment & External API"]
+        StudentDash --> RazorpayUtil[utils/razorpay.js]
+        RazorpayUtil --> RazorpaySDK["Razorpay Checkout JS CDN"]
     end
 
     subgraph StateLayer ["Data & State Infrastructure"]
@@ -81,13 +87,6 @@ Within [`App.jsx`](file:///c:/Users/yashx/OneDrive/Desktop/FrondEnd%20FINAL/fron
 </ThemeProvider>
 ```
 
-### Why this order matters:
-1. **`Provider (Redux)`**: Sits at the top so any page, component, or context consumer can dispatch actions.
-2. **`ThemeProvider`**: Injects theme class into `<body>` immediately upon mount, preventing flash of unstyled theme.
-3. **`AuthProvider`**: Manages user identity and permissions consumed by `ProtectedRoute` and route elements.
-4. **`NotificationProvider`**: Injects toast dispatchers used by action handlers (e.g., job applied, status changed).
-5. **`HashRouter`**: Enables URL hashing (e.g., `/#/student`), eliminating server rewrite requirements for single-page applications.
-
 ---
 
 ## 3. Route Guard & Role-Based Security
@@ -105,32 +104,27 @@ Protected pages are wrapped with [`ProtectedRoute.jsx`](file:///c:/Users/yashx/O
 />
 ```
 
-### How `ProtectedRoute` operates:
 - Reads `user` from `useAuth()`.
-- **Not logged in**: Redirects directly to `/#/login`.
-- **Logged in with wrong role**: Automatically redirects to their authorized workspace (e.g., a student visiting `/recruiter` is redirected to `/student`).
-- **Authorized**: Renders the target child component.
+- **Not logged in**: Redirects to `/#/login`.
+- **Wrong role**: Automatically redirects to authorized workspace.
+- **Authorized**: Renders target page.
 
 ---
 
 ## 4. State Management Architecture
 
-Kairos uses a balanced three-tier state management design:
-
 ```mermaid
 flowchart LR
     subgraph GlobalServerState ["1. Redux Toolkit (Shared Async Data)"]
         jobsSlice["jobsSlice.js
-        - jobs.active
-        - jobs.recruiter
+        - jobs.items
         - loadActiveJobs()
         - createJob()
         - deleteJob()"]
         sessionsSlice["sessionsSlice.js
-        - sessions.list
-        - sessions.booked
-        - loadSessions()
-        - bookSession()"]
+        - sessions.items
+        - loadSkillSessions()
+        - createSkillSession()"]
     end
 
     subgraph GlobalUIState ["2. React Context API (Cross-Cutting Concerns)"]
@@ -148,52 +142,27 @@ flowchart LR
 
     subgraph LocalUIState ["3. Component State (useState / useMemo)"]
         ComponentState["Dashboard State
-        - activePage ('listings'|'applicants')
+        - activePage ('listings'|'applicants'|'skills'|'booked-sessions')
         - searchTerm
         - filterTab ('all'|'saved')
-        - form inputs"]
+        - payment modal state"]
     end
 ```
 
-| Layer | Technology | Responsibilities |
-| :--- | :--- | :--- |
-| **Shared Async Data** | **Redux Toolkit** | Asynchronous entity actions (`createAsyncThunk`), shared job listings, skill sessions. |
-| **Cross-Cutting UI State** | **React Context** | User session (`AuthContext`), Appearance theme (`ThemeContext`), In-app alerts (`NotificationContext`). |
-| **View & Filter State** | **React `useState` / `useMemo`** | Current sidebar view tab, search input query, active jobs toggle, multi-field form drafts. |
-
 ---
 
-## 5. View Swapping vs Route Navigation
+## 5. Razorpay Integration Architecture (`utils/razorpay.js`)
 
-The dashboards use a hybrid navigation strategy:
+Kairos connects with the official Razorpay Checkout SDK for frictionless peer session micro-transactions:
 
-### A. Sub-View Switching via Sidebar (`activePage`)
-Instead of mounting full page reloads, [`StudentDashboard.jsx`](file:///c:/Users/yashx/OneDrive/Desktop/FrondEnd%20FINAL/frontend/src/pages/StudentDashboard.jsx) and [`RecruiterDashboard.jsx`](file:///c:/Users/yashx/OneDrive/Desktop/FrondEnd%20FINAL/frontend/src/pages/RecruiterDashboard.jsx) utilize state-driven view swapping:
-
-```jsx
-// RecruiterDashboard.jsx
-const pageMap = {
-  listings: ListingsAndPostView, // Merged 2-column view
-  'post-job': ListingsAndPostView,
-  applicants: ApplicantsView,     // Candidate pipeline
-};
-
-return (
-  <div className="recruiter-workspace-layout">
-    <RecruiterSidebar activePage={activePage} onChange={setActivePage} />
-    {pageMap[activePage] || ListingsAndPostView}
-  </div>
-);
-```
-- **Benefits**: Instant zero-latency tab switching, preserves scroll state, avoids redundant data fetches.
-
-### B. Dedicated Full-Page Routes
-For standalone deep-linked tasks, dedicated router routes are used:
-- `/#/jobs/:jobId`: Detailed job view.
-- `/#/settings`: Account and profile editor.
-- `/#/portfolio/edit`: Comprehensive portfolio and resume builder.
-- `/#/profile`: Student's personal portfolio showcase.
-- `/#/students/:studentId`: Public view of other students' portfolios (e.g. peer tutors from Skill Exchange or candidates for recruiters). Supports state (`{ from: 'skills' }`) and query params (`?tab=skills`) to preserve back navigation.
+1. **Dynamic Script Loading**:
+   `loadRazorpayCheckout()` dynamically appends `https://checkout.razorpay.com/v1/checkout.js` on demand, eliminating redundant initial payload size.
+2. **Environment Key**:
+   Reads `import.meta.env.VITE_RAZORPAY_KEY_ID`. In production / GitHub Actions, this is securely injected via GitHub Secrets.
+3. **Promise-Wrapped Checkout**:
+   `payWithRazorpay({ amount, description, prefill })` wraps the `window.Razorpay` event handlers into a clean Promise that resolves with `response.razorpay_payment_id` on payment success or rejects if cancelled.
+4. **Active vs. Cancelled Booking Separation**:
+   Cancelled bookings remain stored for user refund auditing in the **History** tab, but are ignored by duplicate booking checks so students can seamlessly re-book the same session later if desired.
 
 ---
 
@@ -202,75 +171,24 @@ For standalone deep-linked tasks, dedicated router routes are used:
 All asynchronous business logic connects through [`frontend/src/services/api.js`](file:///c:/Users/yashx/OneDrive/Desktop/FrondEnd%20FINAL/frontend/src/services/api.js).
 
 ### Features:
-1. **Async Simulation (`asyncWrap`)**: Returns Promises with realistic micro-delays (40ms) to ensure true asynchronous component lifecycles (loading spinners, disabled states).
+1. **Async Simulation (`asyncWrap`)**: Returns Promises with realistic micro-delays (40ms) to ensure true asynchronous component lifecycles.
 2. **Dual-Role Persistent Store**:
    - Seeded initial state for recruiters, jobs, student portfolios, applications, and skill sessions.
-   - Applications are persisted in `localStorage` under `kairos_applications` so that status changes (`Applied`, `Accepted`, `Rejected`) endure across browser refreshes and tab transitions.
-3. **Decision Finality Enforcement**:
-   - `updateApplicationStatus` prevents overwriting or toggling applications that are already in an `Accepted` or `Rejected` state, guaranteeing strict decision finality.
-4. **Session Seat Management & Cancellation Locking**:
-   - Booking a skill session decrements available seats in real time and guards against overbooking.
-   - Cancelling increments the available seats back by 1.
-   - If a meeting link has been provided by the host, cancellation is strictly locked and throws an error if attempted.
-5. **Cross-Component Event Bus**:
-   - Updates dispatch `window.dispatchEvent(new CustomEvent('kairos_application_updated'))` and `new Event('kairos_sessions_updated')`.
-   - Both recruiter and student components listen to these events to keep applicants, review counts, session seats, and meeting links instantly synchronized without a WebSocket backend.
+   - Applications, job vacancies, and session bookings persist in `localStorage`.
+3. **Refund Generation & Cancellation Locking**:
+   - Generates mock refund records (`rfnd_...`) when a paid booking is cancelled.
+   - Once a meeting link is published by the host, cancellations are strictly locked to protect confirmed attendees.
+4. **Cross-Component Event Bus**:
+   - Emits custom window events (`kairos_application_updated`, `kairos_sessions_updated`) to sync seats, application statuses, and meeting links instantly across open tabs.
 
 ---
 
-## 7. Component Map & Prop Contracts
+## 7. Styling Architecture
 
-```mermaid
-classDiagram
-    class Navbar {
-        +workspaceLabel: string
-        -unreadCount: number
-        -notifications: Array
-    }
+All styling is managed through unified Vanilla CSS design tokens in [`index.css`](file:///c:/Users/yashx/OneDrive/Desktop/FrondEnd%20FINAL/frontend/src/index.css) and dedicated component stylesheets:
+- `SkillExchangePage.css`
+- `BookedSessionsPage.css`
+- `MySessionsPage.css`
+- `SessionForm.css`
 
-    class RecruiterSidebar {
-        +activePage: string
-        +pendingCount: number
-        +onChange(pageKey): void
-        -settingsOpen: boolean
-        -signOut(): void
-    }
-
-    class RecruiterDashboard {
-        +activePage: string
-        +jobs: Array
-        +applications: Array
-        +pendingApplicants: number
-        +handlePostJob(): void
-        +handleToggleStatus(): void
-        +handleDeleteJob(): void
-        +handleAcceptApplicant(): void
-        +handleRejectApplicant(): void
-    }
-
-    class JobCardRecruiter {
-        +job: Object
-        +applications: Array
-        +onToggleStatus(jobId, status): void
-        +onDeleteJob(jobId): void
-        +onAcceptApplicant(appId): void
-        +onRejectApplicant(appId): void
-    }
-
-    RecruiterDashboard *-- Navbar
-    RecruiterDashboard *-- RecruiterSidebar
-    RecruiterDashboard *-- JobCardRecruiter
-```
-
----
-
-## 8. Styling Architecture (`index.css`)
-
-All styling is managed through unified Vanilla CSS design tokens in [`index.css`](file:///c:/Users/yashx/OneDrive/Desktop/FrondEnd%20FINAL/frontend/src/index.css):
-
-- **Tokens (`:root`)**: `--green`, `--light-green`, `--surface`, `--card-bg`, `--ink`, `--muted`, `--line`.
-- **Dark Theme (`.dark-theme`)**: Re-assigns CSS tokens at the root level, so components instantly adapt without CSS re-writing.
-- **Layout Grids**:
-  - `.student-workspace-layout`: `225px` sidebar + fluid content area.
-  - `.recruiter-workspace-layout`: `230px` sidebar + fluid content area.
-  - `.dashboard-grid`: `minmax(340px, 0.9fr) 1.1fr` two-column layout for post form + listings. Responsive breakpoint at `1120px` to stack columns on smaller screens.
+Responsive CSS grid layouts and native media queries automatically handle mobile and desktop view transitions without external CSS frameworks.

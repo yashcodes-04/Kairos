@@ -1,6 +1,6 @@
 # Kairos - Application User & Data Flow Guide
 
-This document outlines the complete user journeys, data flow, status lifecycles, and cross-cutting event mechanisms across the Kairos platform.
+This document outlines the complete user journeys, data flow, status lifecycles, Razorpay payment & refund flows, and cross-cutting event mechanisms across the Kairos platform.
 
 ---
 
@@ -21,8 +21,8 @@ flowchart TD
         StudentDash --> TabJobs[Job Discovery & Search]
         StudentDash --> TabApps[My Applications]
         StudentDash --> TabSkills[Peer Skill Exchange]
-        StudentDash --> TabBooked[Booked Sessions]
-        StudentDash --> TabCreateSess[Create Skill Session]
+        StudentDash --> TabBooked[Booked Sessions & History]
+        StudentDash --> TabCreateSess[Create Skill Session with Fee]
         StudentDash --> TabMySess[My Hosted Sessions]
         StudentDash --> TabProfile[Portfolio & Resume /portfolio/edit]
     end
@@ -37,6 +37,7 @@ flowchart TD
     subgraph CrossCutting ["⚙️ Cross-Cutting Features"]
         Settings[Sidebar Settings: Profile, Theme Light/Dark, Log out]
         Notifs[Notification Popover & Toast Alerts]
+        RazorpayModule[Razorpay Payment & Refund Tracker]
         Shortcuts[Keyboard Shortcut: Ctrl + B to Sign Out]
     end
 
@@ -97,48 +98,65 @@ sequenceDiagram
 ```
 
 1. **Browse Roles**: Students filter through campus and hybrid jobs by keyword, category, or status tab (`All`, `Saved`, `Applied`, `Accepted`, `Rejected`).
-2. **Detailed View**: Clicking a job navigates to `/#/jobs/:jobId` with full description, recruiter company details, and compensation. If rejected, the button is disabled with a notice that the application was declined.
+2. **Detailed View**: Full role description, recruiter company details, and compensation.
 3. **Save for Later**: Clicking the bookmark icon toggles saved jobs instantly.
-4. **My Applications Tab**: Tracks all submitted roles, displaying color-coded status badges:
+4. **My Applications Tab**: Tracks all submitted roles with status badges:
    - `Applied / Under Review` (Gold badge)
    - `Accepted` (Green badge with employer contact instructions)
    - `Rejected` (Red badge with respectful feedback notice)
+   - `Positions Filled` badge when vacancies run out.
    - `Saved` (Blue badge)
 
-### B. Peer Skill Exchange Flow
-```mermaid
-stateDiagram-v2
-    [*] --> BrowseSessions: Open "Skill exchange"
-    BrowseSessions --> BookSession: Click "Join session"
-    BookSession --> BookedList: Session added to "Booked sessions"
-    
-    BrowseSessions --> ViewProfile: Click "View profile" in card footer
-    ViewProfile --> BrowseSessions: Click "Back to Skill Exchange" (/student?tab=skills)
+---
 
-    BrowseSessions --> CreateSession: Open "Create session"
-    CreateSession --> HostedList: Publish new session (Title, Topic, Time, Seats)
-    HostedList --> EditSession: Edit title, time, or capacity
-    HostedList --> CancelSession: Delete session
+### B. Peer Skill Exchange & Razorpay Payment/Refund Flow
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Student
+    participant UI as SkillExchangePage
+    participant Razorpay as Razorpay Checkout SDK
+    participant API as api.js (Booking Store)
+    participant BookedUI as BookedSessionsPage
+
+    Student->>UI: Click "Book session" (Paid role e.g. ₹99)
+    UI->>Razorpay: payWithRazorpay({ amount: fee, prefill })
+    Razorpay-->>Student: Opens official Razorpay modal (UPI/Card/Netbanking)
+    Student->>Razorpay: Simulates payment success
+    Razorpay-->>UI: Returns razorpay_payment_id ("pay_...")
+    UI->>API: api.bookSkillSession(studentId, sessionId, { paymentId, amountPaid })
+    API-->>UI: Booking confirmed (Seat count decreased by 1)
+    UI->>UI: Toast: "Payment successful — ₹99 paid"
+
+    opt User Cancels Booking
+        Student->>BookedUI: Click "Cancel booking"
+        BookedUI->>BookedUI: Displays confirmation dialog with refund notice
+        Student->>BookedUI: Confirms cancellation
+        BookedUI->>API: api.cancelSkillSessionBooking(studentId, sessionId)
+        API->>API: Generates refund_id (rfnd_...), restores seat (+1)
+        API-->>BookedUI: Returns refund info
+        BookedUI->>BookedUI: Toast: "₹99 will be credited back in 2-3 working hours"
+        BookedUI->>BookedUI: Moves booking to "History" tab with refund badge
+    end
 ```
 
-1. **Browse Sessions**: Students discover micro-learning workshops hosted by fellow students (e.g., React Hooks, Figma UI, Interview Prep).
-2. **View Host Profile**: Every session card features a dedicated **"View profile"** button in its footer action row. Navigating to the student teacher's profile preserves the referrer state (`from: 'skills'`), allowing the back button to return directly to the Skill Exchange tab rather than defaulting to job listings.
-3. **Book & Cancel Seats (Real-Time Counter Adjustment)**:
-   - One-click booking immediately decreases the remaining seats for that session by 1. Sessions with 0 seats remaining are disabled and marked "Full".
-   - Cancelling a booking releases the seat and increments the session's available seats back by 1.
-4. **Booked Sessions & Cancellation Lock**:
-   - Students who applied/booked can access the session in "Booked sessions".
-   - If the host has not yet provided a meeting link, the card clearly shows: `Link will be given to you soon.` and allows cancellation.
-   - Once the host provides the meeting link, a **"Join meeting"** button appears, and **cancellation is strictly locked** (`Cancellation locked — meeting link provided`) so confirmed attendees cannot cancel once the session is finalized.
-5. **Host a Session & Provide Meeting Link**:
-   - Students can host custom workshops.
-   - In "My sessions", the host has a **"Provide link"** button to enter their Google Meet, Zoom, or Teams URL.
-   - Pushing the link sends an instant push notification to all booked learners and unlocks the meeting room exclusively for enrolled students.
-6. **Manage Sessions**: Edit details or remove sessions anytime.
+1. **Browse Sessions**: Students discover micro-learning workshops with clear fee badges (`Free` or `₹99`, `₹199`).
+2. **Book Paid Session**: Clicking book triggers Razorpay Checkout dynamically. Once approved, `api.bookSkillSession` stores the `paymentId` and marks the session as booked.
+3. **Seat Management**: Available seats decrement immediately. Sessions with 0 seats remaining show `Full`.
+4. **Cancellation & Refund**:
+   - Students can cancel from **"Booked sessions"** before a meeting link is shared.
+   - For paid sessions, a modal confirms the refund initiation.
+   - Generates a tracking ID (`rfnd_...`), increments the seats back by 1, and moves the session to the **History** tab.
+   - Displays: *"Refund initiated (₹XX) · Expected in 2-3 working days"* along with notification alerts.
+5. **Attendee-Only Meeting Links**:
+   - In "My sessions", the host can provide a Google Meet/Zoom link.
+   - Enrolled students receive a notification and a **"Join meeting"** button.
+   - Once a link is provided, cancellation is locked to safeguard confirmed sessions.
+
+---
 
 ### C. Student Portfolio & Resume Flow
 - Accessible from sidebar: **Edit portfolio** (`/#/portfolio/edit`) and **View portfolio** (`/#/profile`).
-- Clean, focused interface without distracting tips.
 - Students can update their Bio, add taggable Skills, link GitHub/Live projects, and upload a PDF resume file.
 - When applying to jobs, recruiters see the student's name, college, course, bio, and resume link.
 
@@ -147,67 +165,14 @@ stateDiagram-v2
 ## 4. Recruiter Workflow Details
 
 ### A. Unified Job Posting & Management Flow
-```mermaid
-flowchart LR
-    subgraph RecruiterLayout ["Recruiter Workspace (2-Column Grid)"]
-        direction TB
-        Form["Left: Post a Job Form
-        - Title & Arrangement
-        - Location & Hours
-        - Pay Rate & Vacancies
-        - Role Description"]
-        
-        Listings["Right: Posted Jobs Panel
-        - Active filter toggle
-        - Pause / Activate button
-        - Remove listing button
-        - Clean Applicant counts"]
-    end
-
-    Form -->|Click 'Publish Job'| Action[dispatch(createJob)]
-    Action -->|Instant Live Update| Listings
-```
-
-1. **Sidebar Navigation**:
-   - **My listings**: Displays the merged two-column layout with posted job listings and fast job creation form.
-   - **Applicants**: Dedicated candidate review pipeline with live **pending reviews counter badge**.
-2. **Publishing a Role**:
-   - Recruiter completes the job creation form on the left.
-   - On submit, job is validated and added to the store via Redux `createJob`.
-   - A success notification is shown, and the job appears instantly in the right-hand listings panel without page reload.
-3. **Managing Postings**:
-   - **Pause/Activate**: Toggles job status so students can or cannot see it in search.
-   - **Remove**: Deletes the posting and cleans up related applications.
+1. **My listings**: Displays the merged two-column layout with posted job listings and fast job creation form.
+2. **Applicants**: Dedicated candidate review pipeline with live **pending reviews counter badge**.
+3. **Publishing a Role**: Validated and added to the store via Redux `createJob` without page reload.
+4. **Managing Postings**: Pause/activate listings or remove jobs.
 
 ### B. Candidate Review Pipeline Flow
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Recruiter
-    participant UI as RecruiterDashboard (Applicants)
-    participant API as api.js
-    participant Notif as NotificationContext
-    actor Student
-
-    Recruiter->>UI: Open "Applicants" tab
-    UI->>UI: Displays pending review counter badge and candidate list
-    alt Recruiter Accepts Candidate
-        Recruiter->>UI: Click "Accept"
-        UI->>API: api.updateApplicationStatus(appId, recruiterId, 'Accepted')
-        API-->>UI: Status locked to 'Accepted' (Decision is final)
-        UI->>Notif: Add toast & notification: "Applicant accepted"
-    else Recruiter Rejects Candidate
-        Recruiter->>UI: Click "Reject"
-        UI->>API: api.updateApplicationStatus(appId, recruiterId, 'Rejected')
-        API-->>UI: Status locked to 'Rejected' (Decision is final)
-        UI->>Notif: Add toast: "Application rejected"
-    end
-    UI->>Student: Dispatch 'kairos_application_updated' event
-    Note over Student: Student dashboard immediately updates with status badge!
-```
-
-- **Final, Irreversible Decisions**: Once an application is marked **Accepted** or **Rejected**, the decision is permanent. Action buttons disappear to prevent accidental status toggling.
-- **Dedicated Pending Reviews Count**: Pending reviews are shown strictly on the **Applicants** tab banner and the **Applicants** sidebar nav badge, keeping "My listings" clean and focused.
+- **Final Decisions**: Once marked **Accepted** or **Rejected**, decisions are permanent.
+- **Auto-Pausing & Auto-Rejection**: When the last vacancy for a job is accepted, the listing automatically pauses and remaining applicants receive an auto-rejected status with "Positions Filled" indicators.
 - Quick `mailto:` button allows direct email communication with accepted students.
 
 ---
@@ -215,20 +180,13 @@ sequenceDiagram
 ## 5. Real-Time Cross-Tab & Event Flow
 
 The app maintains synchronized state across multiple browser tabs and components without a heavy websocket server:
-- **Custom Event Bus**: `window.dispatchEvent(new CustomEvent('kairos_application_updated'))` fires whenever an application status changes or a new job is posted.
-- **Storage Sync**: `window.addEventListener('storage', ...)` and `localStorage` persistence sync session and application states (`kairos_applications`) if the recruiter and student workspaces are opened in different tabs or windows.
+- **Custom Event Bus**: `window.dispatchEvent(new CustomEvent('kairos_application_updated'))` and `new Event('kairos_sessions_updated')`.
+- **Storage Sync**: `window.addEventListener('storage', ...)` and `localStorage` persistence sync session and application states.
 
 ---
 
 ## 6. Theme & Settings Flow
 
-1. **Sidebar Settings Trigger**:
-   - Available in both Student and Recruiter sidebars at the bottom.
-   - Clicking opens the embedded settings drawer with an **Account** link.
-2. **Appearance Switch**:
-   - Clicking **Light** or **Dark** updates `ThemeContext`.
-   - Adds/removes the `.dark-theme` class on `document.body` and saves preference to `localStorage`.
-   - All CSS variables dynamically adapt seamlessly.
-3. **Sign Out**:
-   - Click "Log out" or press <kbd>Ctrl</kbd> + <kbd>B</kbd> keyboard shortcut.
-   - Clears credentials from `AuthContext` and redirects to `/login`.
+1. **Sidebar Settings Trigger**: Available in both Student and Recruiter sidebars at the bottom.
+2. **Appearance Switch**: Clicking **Light** or **Dark** updates `ThemeContext`, adding/removing `.dark-theme` on `document.body`.
+3. **Sign Out**: Click "Log out" or press <kbd>Ctrl</kbd> + <kbd>B</kbd> keyboard shortcut.
