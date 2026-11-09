@@ -18,14 +18,27 @@ const INITIAL_JOBS = [
 ];
 
 const INITIAL_SKILL_SESSIONS = [
-  { id: 101, student_id: 1, title: 'React hooks, made practical', teacher: 'Rahul Sharma', topic: 'Development', level: 'Intermediate', time: 'Wednesday · 5:00 PM', duration: '60 min', seats: 3, color: 'teal', description: 'Build a small counter and learn when to use useState, useEffect, and custom hooks.', meetingLink: '' },
-  { id: 102, student_id: 21, title: 'Figma for first portfolios', teacher: 'Ananya Sharma', topic: 'Design', level: 'Beginner', time: 'Saturday · 11:00 AM', duration: '75 min', seats: 4, color: 'gold', description: 'Learn a simple workflow to design your first portfolio screen with Figma.', meetingLink: '' },
-  { id: 103, student_id: 22, title: 'JavaScript interview patterns', teacher: 'Rohan Mehta', topic: 'Development', level: 'Intermediate', time: 'Sunday · 4:00 PM', duration: '60 min', seats: 2, color: 'blue', description: 'Practice common array, string, and object questions with a calm problem-solving approach.', meetingLink: '' },
-  { id: 104, student_id: 23, title: 'Build your personal brand', teacher: 'Meera Kapoor', topic: 'Career', level: 'All levels', time: 'Monday · 6:30 PM', duration: '45 min', seats: 7, color: 'coral', description: 'Turn your projects and interests into a profile that recruiters can understand quickly.', meetingLink: '' },
+  { id: 101, student_id: 1, title: 'React hooks, made practical', teacher: 'Rahul Sharma', topic: 'Development', level: 'Intermediate', time: 'Wednesday · 5:00 PM', duration: '60 min', seats: 3, fee: 99, color: 'teal', description: 'Build a small counter and learn when to use useState, useEffect, and custom hooks.', meetingLink: '' },
+  { id: 102, student_id: 21, title: 'Figma for first portfolios', teacher: 'Ananya Sharma', topic: 'Design', level: 'Beginner', time: 'Saturday · 11:00 AM', duration: '75 min', seats: 4, fee: 99, color: 'gold', description: 'Learn a simple workflow to design your first portfolio screen with Figma.', meetingLink: '' },
+  { id: 103, student_id: 22, title: 'JavaScript interview patterns', teacher: 'Rohan Mehta', topic: 'Development', level: 'Intermediate', time: 'Sunday · 4:00 PM', duration: '60 min', seats: 2, fee: 199, color: 'blue', description: 'Practice common array, string, and object questions with a calm problem-solving approach.', meetingLink: '' },
+  { id: 104, student_id: 23, title: 'Build your personal brand', teacher: 'Meera Kapoor', topic: 'Career', level: 'All levels', time: 'Monday · 6:30 PM', duration: '45 min', seats: 7, fee: 199, color: 'coral', description: 'Turn your projects and interests into a profile that recruiters can understand quickly.', meetingLink: '' },
 ];
+
+const DEFAULT_SESSION_FEE = 99;
+const MIN_SESSION_FEE = 9;
+const MAX_SESSION_FEE = 299;
+const normalizeSessionFee = (fee) => {
+  const value = Number(fee);
+  return Number.isInteger(value) && value >= MIN_SESSION_FEE && value <= MAX_SESSION_FEE ? value : DEFAULT_SESSION_FEE;
+};
 
 const INITIAL_APPLICATIONS = [
   { id: 401, job_id: 1, student_id: 1, status: 'Applied', created_at: new Date(Date.now() - 86400000).toISOString() },
+];
+
+const INITIAL_SESSION_BOOKINGS = [
+  { id: 501, student_id: 21, session_id: 101 },
+  { id: 502, student_id: 1, session_id: 102 },
 ];
 
 const loadStoredApplications = () => {
@@ -90,15 +103,20 @@ const saveStoredJobs = (items) => {
   } catch {}
 };
 
-const INITIAL_SESSION_BOOKINGS = [
-  { id: 501, student_id: 21, session_id: 101 },
-  { id: 502, student_id: 1, session_id: 102 },
-];
-
 const loadStoredSessions = () => {
   try {
     const raw = localStorage.getItem('kairos_skill_sessions');
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const storedSessions = JSON.parse(raw);
+      const sessionsWithFees = storedSessions.map((session) => ({
+        ...session,
+        fee: normalizeSessionFee(session.fee),
+      }));
+      if (sessionsWithFees.some((session, index) => Number(session.fee) !== Number(storedSessions[index].fee))) {
+        localStorage.setItem('kairos_skill_sessions', JSON.stringify(sessionsWithFees));
+      }
+      return sessionsWithFees;
+    }
   } catch {}
   return [...INITIAL_SKILL_SESSIONS];
 };
@@ -123,6 +141,13 @@ const saveStoredBookings = (bookings) => {
     localStorage.setItem('kairos_session_bookings', JSON.stringify(bookings));
     window.dispatchEvent(new Event('kairos_sessions_updated'));
   } catch {}
+};
+
+const createMockRefundId = () => {
+  const token = typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID().replace(/-/g, '').slice(0, 10)
+    : `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+  return `rfnd_${token}`;
 };
 
 const loadStoredStudents = () => {
@@ -777,12 +802,12 @@ const mockApi = {
       return skillSessions.filter((session) => Number(session.student_id) === Number(studentId)).map((session) => ({ ...session }));
     }),
 
-  createSkillSession: async ({ studentId, teacher, title, topic, level, time, duration, seats, description, meetingLink = '' }) =>
+  createSkillSession: async ({ studentId, teacher, title, topic, level, time, duration, seats, fee = DEFAULT_SESSION_FEE, description, meetingLink = '' }) =>
     asyncWrap(() => {
       skillSessions = loadStoredSessions();
       const newSession = {
         id: Date.now(), student_id: Number(studentId), teacher: teacher.trim(), title: title.trim(), topic, level,
-        time: time.trim(), duration: duration.trim(), seats: Number(seats), description: description.trim(), color: 'teal',
+        time: time.trim(), duration: duration.trim(), seats: Number(seats), fee: normalizeSessionFee(fee), description: description.trim(), color: 'teal',
         meetingLink: (meetingLink || '').trim(),
       };
       skillSessions.unshift(newSession);
@@ -802,6 +827,7 @@ const mockApi = {
         duration: updates.duration !== undefined ? updates.duration.trim() : session.duration,
         description: updates.description !== undefined ? updates.description.trim() : session.description,
         seats: updates.seats !== undefined ? Number(updates.seats) : session.seats,
+        fee: updates.fee !== undefined ? normalizeSessionFee(updates.fee) : normalizeSessionFee(session.fee),
         meetingLink: updates.meetingLink !== undefined ? (updates.meetingLink || '').trim() : (session.meetingLink || ''),
       });
       saveStoredSessions(skillSessions);
@@ -830,12 +856,25 @@ const mockApi = {
       return { message: 'Session deleted.' };
     }),
 
-  getBookedSkillSessions: async (studentId) =>
+  getBookedSkillSessions: async (studentId, { includeCancelled = false } = {}) =>
     asyncWrap(() => {
       skillSessions = loadStoredSessions();
       sessionBookings = loadStoredBookings();
-      const bookedIds = new Set(sessionBookings.filter((booking) => Number(booking.student_id) === Number(studentId)).map((booking) => Number(booking.session_id)));
-      return skillSessions.filter((session) => bookedIds.has(Number(session.id))).map((session) => ({ ...session }));
+      const bookings = sessionBookings.filter((booking) => Number(booking.student_id) === Number(studentId) && (includeCancelled || booking.status !== 'Cancelled'));
+      return bookings
+        .map((booking) => {
+          const session = skillSessions.find((item) => Number(item.id) === Number(booking.session_id)) || booking.sessionSnapshot;
+          if (!session) return null;
+          return {
+            ...session,
+            bookingId: booking.id,
+            bookingStatus: booking.status || 'Booked',
+            paymentId: booking.paymentId || '',
+            amountPaid: Number(booking.amountPaid) || Number(session.fee) || 0,
+            refund: booking.refund || null,
+          };
+        })
+        .filter(Boolean);
     }),
 
   getSkillSessionBookings: async (sessionId, teacherId) =>
@@ -845,24 +884,31 @@ const mockApi = {
       const session = skillSessions.find((item) => Number(item.id) === Number(sessionId));
       if (!session || Number(session.student_id) !== Number(teacherId)) throw new Error('Session not found or you do not have permission to view attendees.');
       return sessionBookings
-        .filter((booking) => Number(booking.session_id) === Number(sessionId))
+        .filter((booking) => Number(booking.session_id) === Number(sessionId) && booking.status !== 'Cancelled')
         .map((booking) => {
           const student = students.find((item) => Number(item.id) === Number(booking.student_id));
           return { bookingId: booking.id, studentId: booking.student_id, name: student?.full_name || 'Student', college: student?.college || '', course: student?.course || '' };
         });
     }),
 
-  bookSkillSession: async (studentId, sessionId) =>
+  bookSkillSession: async (studentId, sessionId, payment = {}) =>
     asyncWrap(() => {
       skillSessions = loadStoredSessions();
       sessionBookings = loadStoredBookings();
       const session = skillSessions.find((item) => Number(item.id) === Number(sessionId));
       if (!session) throw new Error('This session is no longer available.');
       if (Number(session.student_id) === Number(studentId)) throw new Error('You cannot book your own session.');
-      if (sessionBookings.some((booking) => Number(booking.student_id) === Number(studentId) && Number(booking.session_id) === Number(sessionId))) return { message: 'Already booked.' };
+      const hasActiveBooking = sessionBookings.some(
+        (booking) => Number(booking.student_id) === Number(studentId)
+          && Number(booking.session_id) === Number(sessionId)
+          && booking.status !== 'Cancelled'
+      );
+      if (hasActiveBooking) throw new Error('This session is already booked.');
       if (Number(session.seats) <= 0) throw new Error('No seats left for this session.');
+      const fee = Number(session.fee) || 0;
+      if (fee > 0 && (!payment.paymentId || Number(payment.amountPaid) !== fee)) throw new Error('A completed payment is required for this session.');
       session.seats = Math.max(0, Number(session.seats) - 1);
-      sessionBookings.push({ id: Date.now(), student_id: Number(studentId), session_id: Number(sessionId) });
+      sessionBookings.push({ id: Date.now(), student_id: Number(studentId), session_id: Number(sessionId), status: 'Booked', ...(fee > 0 ? { paymentId: payment.paymentId, amountPaid: fee } : {}) });
       saveStoredSessions(skillSessions);
       saveStoredBookings(sessionBookings);
       return { message: 'Session booked.', seats: session.seats };
@@ -876,14 +922,28 @@ const mockApi = {
       if (session && session.meetingLink && session.meetingLink.trim()) {
         throw new Error('This session cannot be cancelled because the meeting link has already been provided.');
       }
-      const hadBooking = sessionBookings.some((booking) => Number(booking.student_id) === Number(studentId) && Number(booking.session_id) === Number(sessionId));
+      const booking = sessionBookings.find((item) => Number(item.student_id) === Number(studentId) && Number(item.session_id) === Number(sessionId) && item.status !== 'Cancelled');
+      const hadBooking = Boolean(booking);
       if (hadBooking && session) {
         session.seats = Number(session.seats) + 1;
         saveStoredSessions(skillSessions);
       }
-      sessionBookings = sessionBookings.filter((booking) => !(Number(booking.student_id) === Number(studentId) && Number(booking.session_id) === Number(sessionId)));
+      const amountPaid = Number(booking?.amountPaid) || Number(session?.fee) || 0;
+      if (booking && amountPaid > 0) {
+        booking.status = 'Cancelled';
+        booking.sessionSnapshot = { ...session };
+        booking.refund = {
+          amount: amountPaid,
+          refund_id: createMockRefundId(),
+          timestamp: new Date().toISOString(),
+          status: 'Processing',
+          expectedArrival: '2-3 working days',
+        };
+      } else {
+        sessionBookings = sessionBookings.filter((item) => item !== booking);
+      }
       saveStoredBookings(sessionBookings);
-      return { message: 'Booking cancelled.' };
+      return { message: 'Booking cancelled.', refund: booking?.refund || null };
     }),
 
   resetToDemoData: () => {

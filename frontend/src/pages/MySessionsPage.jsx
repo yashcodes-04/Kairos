@@ -4,10 +4,11 @@ import { Link } from 'react-router-dom';
 import SessionForm from '../components/SessionForm';
 import { api } from '../services/api';
 import { useDispatch, useSelector } from 'react-redux';
-import { deleteSkillSession, loadSkillSessions, setSkillSessionMeetingLink, updateSkillSession } from '../store/sessionsSlice';
+import { createSkillSession, deleteSkillSession, loadSkillSessions, setSkillSessionMeetingLink, updateSkillSession } from '../store/sessionsSlice';
 import { useNotifications } from '../context/NotificationContext';
+import './MySessionsPage.css';
 
-export default function MySessionsPage({ user, onNavigate }) {
+export default function MySessionsPage({ user }) {
   const dispatch = useDispatch();
   const { addNotification } = useNotifications();
   const allSessions = useSelector((state) => state.sessions.items);
@@ -20,6 +21,7 @@ export default function MySessionsPage({ user, onNavigate }) {
 
   const [attendees, setAttendees] = useState({});
   const [selected, setSelected] = useState(null);
+  const [createOpen, setCreateOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -58,6 +60,20 @@ export default function MySessionsPage({ user, onNavigate }) {
       setMessage('Session updated.');
     } catch (error) {
       setMessage(error.message || 'Could not update the session.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const createSession = async (form) => {
+    setSaving(true);
+    setMessage('');
+    try {
+      await dispatch(createSkillSession({ ...form, studentId: user.id, teacher: user.name })).unwrap();
+      setCreateOpen(false);
+      addNotification({ title: 'Session published', body: `${form.title} is now live in Skill Exchange.`, type: 'session' });
+    } catch (error) {
+      setMessage(error.message || 'Could not create the session.');
     } finally {
       setSaving(false);
     }
@@ -140,7 +156,7 @@ export default function MySessionsPage({ user, onNavigate }) {
           <h1>My skill sessions</h1>
           <p>Update your sessions and provide meeting links to enrolled students. Only booked learners can access your link.</p>
         </div>
-        <button type="button" className="new-session-button" onClick={() => onNavigate('create-session')}>
+        <button type="button" className="new-session-button" onClick={() => setCreateOpen(true)}>
           <PlusCircle size={16} /> New session
         </button>
       </section>
@@ -153,7 +169,7 @@ export default function MySessionsPage({ user, onNavigate }) {
           <div className="my-sessions-empty">
             <h2>No sessions yet</h2>
             <p>Your first practical session could help another student make progress.</p>
-            <button type="button" className="session-save-button" onClick={() => onNavigate('create-session')}>
+            <button type="button" className="session-save-button" onClick={() => setCreateOpen(true)}>
               Create a session
             </button>
           </div>
@@ -239,6 +255,19 @@ export default function MySessionsPage({ user, onNavigate }) {
           </div>
         )}
       </section>
+
+      {createOpen && (
+        <div className="create-session-modal-overlay" onClick={() => !saving && setCreateOpen(false)}>
+          <section className="create-session-modal-card" role="dialog" aria-modal="true" aria-labelledby="createSessionTitle" onClick={(event) => event.stopPropagation()}>
+            <div className="create-session-modal-header">
+              <div><p className="small-heading">TEACH WHAT YOU KNOW</p><h2 id="createSessionTitle">Create a skill session</h2></div>
+              <button type="button" className="close-modal-btn" onClick={() => setCreateOpen(false)} disabled={saving} aria-label="Close"><X size={18} /></button>
+            </div>
+            <p className="form-intro">Share a focused, practical lesson with other Kairos students.</p>
+            <SessionForm submitLabel="Publish session" onSubmit={createSession} onCancel={() => setCreateOpen(false)} saving={saving} />
+          </section>
+        </div>
+      )}
 
       {/* Edit Session Panel */}
       {selected && (

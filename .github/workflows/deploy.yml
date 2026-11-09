@@ -31,6 +31,8 @@ jobs:
         run: |
           cd frontend
           npm run build
+        env:
+          VITE_RAZORPAY_KEY_ID: ${{ secrets.VITE_RAZORPAY_KEY_ID }}
 
       - name: Deploy to gh-pages branch
         uses: JamesIves/github-pages-deploy-action@v4

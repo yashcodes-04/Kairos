@@ -1,18 +1,18 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { lazy, useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import JobCardStudent from '../components/JobCardStudent';
 import StudentSidebar from '../components/StudentSidebar';
-import SkillExchangePage from './SkillExchangePage';
-import CreateSessionPage from './CreateSessionPage';
-import MySessionsPage from './MySessionsPage';
-import BookedSessionsPage from './BookedSessionsPage';
-import MyApplicationsPage from './MyApplicationsPage';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { useDispatch, useSelector } from 'react-redux';
 import { loadActiveJobs } from '../store/jobsSlice';
 import { Search, Sparkles, Bookmark, RefreshCw, FileText, XCircle } from 'lucide-react';
+
+const SkillExchangePage = lazy(() => import('./SkillExchangePage'));
+const MySessionsPage = lazy(() => import('./MySessionsPage'));
+const BookedSessionsPage = lazy(() => import('./BookedSessionsPage'));
+const MyApplicationsPage = lazy(() => import('./MyApplicationsPage'));
 
 export default function StudentDashboard() {
   const { user } = useAuth();
@@ -192,7 +192,7 @@ export default function StudentDashboard() {
 
       <div className="student-workspace-layout">
         <StudentSidebar activePage={activePage} onChange={handlePageChange} />
-        {activePage === 'skills' ? <SkillExchangePage firstName={firstName} user={user} /> : activePage === 'booked-sessions' ? <BookedSessionsPage user={user} onNavigate={handlePageChange} /> : activePage === 'create-session' ? <CreateSessionPage user={user} onNavigate={handlePageChange} /> : activePage === 'my-sessions' ? <MySessionsPage user={user} onNavigate={handlePageChange} /> : activePage === 'applications' ? <MyApplicationsPage user={user} onNavigate={handlePageChange} /> : <main className="dashboard-main student-dashboard-main">
+        {activePage === 'skills' ? <SkillExchangePage firstName={firstName} user={user} /> : activePage === 'booked-sessions' ? <BookedSessionsPage user={user} onNavigate={handlePageChange} /> : activePage === 'my-sessions' ? <MySessionsPage user={user} /> : activePage === 'applications' ? <MyApplicationsPage user={user} onNavigate={handlePageChange} /> : <main className="dashboard-main student-dashboard-main">
         {/* Hero Section */}
         <section className="student-hero">
           <div>

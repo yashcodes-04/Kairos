@@ -1,0 +1,33 @@
+.session-fee {
+  color: var(--green);
+  font-weight: 800;
+}
+
+.session-fee.paid {
+  color: var(--accent-gold-text);
+}
+
+.skill-cancel-modal-backdrop {
+  position: fixed;
+  z-index: 50;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 33, 30, .48);
+}
+
+.skill-cancel-modal {
+  width: min(100%, 400px);
+  padding: 24px;
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, .2);
+}
+
+.skill-cancel-modal h2 { margin: 0 0 8px; color: var(--ink); font-size: 20px; }
+.skill-cancel-modal p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.skill-cancel-modal-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 20px; }
+.skill-cancel-modal-actions > button { padding: 8px 10px; border-radius: 7px; cursor: pointer; font: 800 10px "DM Sans", sans-serif; }
+.skill-cancel-modal-actions > button:first-child { border: 1px solid var(--line); color: var(--ink); background: var(--surface); }
+.skill-cancel-confirm-button { border: 1px solid #efc7c5; color: var(--error); background: #fffafa; }

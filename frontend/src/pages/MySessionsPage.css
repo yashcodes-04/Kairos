@@ -1,0 +1,45 @@
+.create-session-modal-overlay {
+  position: fixed;
+  z-index: 50;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(15, 33, 30, .5);
+}
+
+.create-session-modal-card {
+  width: min(100%, 880px);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding: 28px;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 24px 58px rgba(0, 0, 0, .24);
+}
+
+.create-session-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.create-session-modal-header h2 { margin: 5px 0 0; color: var(--ink); font-size: 25px; }
+
+.create-session-modal-header .close-modal-btn {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  background: var(--surface);
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .create-session-modal-overlay { padding: 12px; }
+  .create-session-modal-card { max-height: calc(100vh - 24px); padding: 20px; }
+}

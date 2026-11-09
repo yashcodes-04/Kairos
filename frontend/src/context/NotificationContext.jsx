@@ -13,17 +13,7 @@ const createStarterNotifications = () => [
 const loadStoredNotifications = () => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      Object.keys(parsed).forEach((key) => {
-        if (Array.isArray(parsed[key])) {
-          parsed[key] = parsed[key].filter(
-            (item) => item.title !== 'Session booked' && item.title !== 'Booking cancelled'
-          );
-        }
-      });
-      return parsed;
-    }
+    if (raw) return JSON.parse(raw);
   } catch {}
   return {};
 };
@@ -40,9 +30,7 @@ export function NotificationProvider({ children }) {
   const [notificationsByAccount, setNotificationsByAccount] = useState(() => loadStoredNotifications());
   const [toast, setToast] = useState(null);
   const notifications = accountKey
-    ? (notificationsByAccount[accountKey] || createStarterNotifications()).filter(
-        (item) => item.title !== 'Session booked' && item.title !== 'Booking cancelled'
-      )
+    ? (notificationsByAccount[accountKey] || createStarterNotifications())
     : [];
 
   useEffect(() => {
@@ -72,9 +60,7 @@ export function NotificationProvider({ children }) {
     setNotificationsByAccount((current) => {
       const stored = loadStoredNotifications();
       const merged = { ...stored, ...current };
-      const existing = (merged[targetKey] || createStarterNotifications()).filter(
-        (item) => item.title !== 'Session booked' && item.title !== 'Booking cancelled'
-      );
+      const existing = merged[targetKey] || createStarterNotifications();
       const updated = { ...merged, [targetKey]: updater(existing) };
       saveStoredNotifications(updated);
       return updated;

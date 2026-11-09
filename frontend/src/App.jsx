@@ -1,21 +1,27 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { NotificationProvider } from './context/NotificationContext';
 import ToastRegion from './components/ToastRegion';
 import ProtectedRoute from './components/ProtectedRoute';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import StudentDashboard from './pages/StudentDashboard';
-import RecruiterDashboard from './pages/RecruiterDashboard';
-import SettingsPage from './pages/SettingsPage';
-import NotFoundPage from './pages/NotFoundPage';
-import JobDetailsPage from './pages/JobDetailsPage';
-import StudentProfilePage from './pages/StudentProfilePage';
-import EditPortfolioPage from './pages/EditPortfolioPage';
-import LandingPage from './pages/LandingPage';
-import CompanyProfilePage from './pages/CompanyProfilePage';
+import './App.css';
+
+const LandingPage = lazy(() => import('./pages/LandingPage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+const StudentDashboard = lazy(() => import('./pages/StudentDashboard'));
+const RecruiterDashboard = lazy(() => import('./pages/RecruiterDashboard'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+const JobDetailsPage = lazy(() => import('./pages/JobDetailsPage'));
+const StudentProfilePage = lazy(() => import('./pages/StudentProfilePage'));
+const EditPortfolioPage = lazy(() => import('./pages/EditPortfolioPage'));
+const CompanyProfilePage = lazy(() => import('./pages/CompanyProfilePage'));
+
+function PageLoader() {
+  return <main className="app-page-loader" role="status" aria-live="polite">Loading Kairos…</main>;
+}
 
 export default function App() {
   return (
@@ -23,6 +29,7 @@ export default function App() {
       <AuthProvider>
         <NotificationProvider>
         <HashRouter>
+          <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
@@ -55,6 +62,7 @@ export default function App() {
 
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
+          </Suspense>
           <ToastRegion />
         </HashRouter>
         </NotificationProvider>

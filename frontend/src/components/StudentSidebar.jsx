@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BookOpen, BriefcaseBusiness, CalendarCheck2, ChevronDown, ChevronRight, FilePenLine, FileText, LayoutDashboard, LogOut, Moon, PlusCircle, Presentation, Settings, Sun, UserRound } from 'lucide-react';
+import { BookOpen, BriefcaseBusiness, CalendarCheck2, ChevronDown, ChevronRight, FilePenLine, FileText, LayoutDashboard, LogOut, Moon, Presentation, Settings, Sun, UserRound } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
@@ -25,7 +25,6 @@ export default function StudentSidebar({ activePage, onChange }) {
     skills: 'Skill Exchange',
     applications: 'My applications',
     'booked-sessions': 'Booked sessions',
-    'create-session': 'Create session',
     'my-sessions': 'My sessions',
   };
   const returnPath = activePage && activePage !== 'jobs' ? `/student?tab=${activePage}` : '/student';
@@ -40,7 +39,6 @@ export default function StudentSidebar({ activePage, onChange }) {
         <button type="button" className={activePage === 'applications' ? 'active' : ''} onClick={() => onChange('applications')}><FileText size={18} /><span>My applications</span><ChevronRight size={15} /></button>
         <button type="button" className={activePage === 'skills' ? 'active' : ''} onClick={() => onChange('skills')}><BookOpen size={18} /><span>Skill exchange</span><ChevronRight size={15} /></button>
         <button type="button" className={activePage === 'booked-sessions' ? 'active' : ''} onClick={() => onChange('booked-sessions')}><CalendarCheck2 size={18} /><span>Booked sessions</span><ChevronRight size={15} /></button>
-        <button type="button" className={activePage === 'create-session' ? 'active' : ''} onClick={() => onChange('create-session')}><PlusCircle size={18} /><span>Create session</span><ChevronRight size={15} /></button>
         <button type="button" className={activePage === 'my-sessions' ? 'active' : ''} onClick={() => onChange('my-sessions')}><Presentation size={18} /><span>My sessions</span><ChevronRight size={15} /></button>
       </nav>
       <div className="student-sidebar-note"><LayoutDashboard size={17} /><p><strong>More coming soon</strong><br />Applications and your profile will appear here.</p></div>

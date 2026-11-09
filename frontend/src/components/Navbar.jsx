@@ -12,7 +12,6 @@ import {
   LogOut,
   Menu,
   Moon,
-  PlusCircle,
   Presentation,
   Settings,
   Sun,
@@ -46,7 +45,6 @@ export default function Navbar({ workspaceLabel, activePage, onNavChange }) {
     skills: 'Skill Exchange',
     applications: 'My applications',
     'booked-sessions': 'Booked sessions',
-    'create-session': 'Create session',
     'my-sessions': 'My sessions',
   };
   const returnPath = activePage && activePage !== 'jobs' ? `/student?tab=${activePage}` : (location.pathname + location.search);
@@ -94,7 +92,6 @@ export default function Navbar({ workspaceLabel, activePage, onNavChange }) {
     { key: 'skills', label: 'Skill exchange', desc: 'Browse & join peer learning sessions', icon: BookOpen },
     { key: 'applications', label: 'My applications', desc: 'Track your submitted applications', icon: FileText },
     { key: 'booked-sessions', label: 'Booked sessions', desc: 'View upcoming registered sessions', icon: CalendarCheck2 },
-    { key: 'create-session', label: 'Create session', desc: 'Host a new peer skill session', icon: PlusCircle },
     { key: 'my-sessions', label: 'My sessions', desc: 'Manage sessions you teach', icon: Presentation }
   ];
 
