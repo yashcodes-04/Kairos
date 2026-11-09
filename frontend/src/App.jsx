@@ -7,11 +7,14 @@ import ToastRegion from './components/ToastRegion';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
-const LandingPage = lazy(() => import('./pages/LandingPage'));
-const LoginPage = lazy(() => import('./pages/LoginPage'));
-const RegisterPage = lazy(() => import('./pages/RegisterPage'));
-const StudentDashboard = lazy(() => import('./pages/StudentDashboard'));
-const RecruiterDashboard = lazy(() => import('./pages/RecruiterDashboard'));
+// Direct-import high-traffic core routes for instantaneous first-load & transitions
+import LandingPage from './pages/LandingPage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import StudentDashboard from './pages/StudentDashboard';
+import RecruiterDashboard from './pages/RecruiterDashboard';
+
+// Lazy-load standalone, secondary full-screen pages
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 const JobDetailsPage = lazy(() => import('./pages/JobDetailsPage'));

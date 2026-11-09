@@ -1,4 +1,4 @@
-import React, { lazy, useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import JobCardStudent from '../components/JobCardStudent';
@@ -9,10 +9,10 @@ import { useDispatch, useSelector } from 'react-redux';
 import { loadActiveJobs } from '../store/jobsSlice';
 import { Search, Sparkles, Bookmark, RefreshCw, FileText, XCircle } from 'lucide-react';
 
-const SkillExchangePage = lazy(() => import('./SkillExchangePage'));
-const MySessionsPage = lazy(() => import('./MySessionsPage'));
-const BookedSessionsPage = lazy(() => import('./BookedSessionsPage'));
-const MyApplicationsPage = lazy(() => import('./MyApplicationsPage'));
+import SkillExchangePage from './SkillExchangePage';
+import MySessionsPage from './MySessionsPage';
+import BookedSessionsPage from './BookedSessionsPage';
+import MyApplicationsPage from './MyApplicationsPage';
 
 export default function StudentDashboard() {
   const { user } = useAuth();
@@ -49,19 +49,17 @@ export default function StudentDashboard() {
   const firstName = user?.name ? user.name.split(' ')[0] : 'Student';
 
   const loadData = async () => {
-    if (!user?.id) return;
     setLoading(true);
     setError('');
     try {
-      const [, savedRes, appsRes] = await Promise.all([
+      const [, apps, savedIds] = await Promise.all([
         dispatch(loadActiveJobs(user.id)).unwrap(),
-        api.getSavedJobIds(user.id),
         api.getStudentApplications(user.id),
+        api.getSavedJobIds(user.id),
       ]);
-      setSavedJobIds(Array.isArray(savedRes) ? savedRes : []);
-      setStudentApplications(Array.isArray(appsRes) ? appsRes : []);
+      setStudentApplications(apps);
+      setSavedJobIds(savedIds);
     } catch (err) {
-      console.error('Error loading student jobs:', err);
       setError('Could not load jobs from storage. Please try again.');
     } finally {
       setLoading(false);
@@ -71,121 +69,111 @@ export default function StudentDashboard() {
   useEffect(() => {
     loadData();
 
-    // Listen for live cross-tab & custom application events
+    // Listen to custom event for instantaneous status sync across components
     const handleSync = () => {
       loadData();
     };
     window.addEventListener('kairos_application_updated', handleSync);
     window.addEventListener('kairos_jobs_updated', handleSync);
-    window.addEventListener('kairos_message_sent', handleSync);
     window.addEventListener('storage', handleSync);
 
     return () => {
       window.removeEventListener('kairos_application_updated', handleSync);
       window.removeEventListener('kairos_jobs_updated', handleSync);
-      window.removeEventListener('kairos_message_sent', handleSync);
       window.removeEventListener('storage', handleSync);
     };
-  }, [user?.id]);
-
-  const appliedJobIds = useMemo(() => {
-    return studentApplications.map((a) => Number(a.job_id));
-  }, [studentApplications]);
-
-  const acceptedJobIds = useMemo(() => {
-    return studentApplications
-      .filter((a) => a.status === 'Accepted')
-      .map((a) => Number(a.job_id));
-  }, [studentApplications]);
-
-  const rejectedJobIds = useMemo(() => {
-    return studentApplications
-      .filter((a) => a.status === 'Rejected')
-      .map((a) => Number(a.job_id));
-  }, [studentApplications]);
+  }, [dispatch, user.id]);
 
   const handleToggleApply = async (jobId) => {
-    const isApplied = appliedJobIds.includes(jobId);
+    const targetJob = jobs.find((j) => Number(j.id) === Number(jobId));
+    if (targetJob && targetJob.status === 'Paused') {
+      alert('This listing is currently paused and cannot accept new applications.');
+      return;
+    }
+
     try {
-      if (isApplied) {
-        const currentApp = studentApplications.find((a) => Number(a.job_id) === Number(jobId));
-        if (currentApp?.status === 'Accepted') {
-          return;
-        }
-        setStudentApplications((prev) => prev.filter((a) => Number(a.job_id) !== Number(jobId)));
+      const existingApp = studentApplications.find((a) => Number(a.job_id) === Number(jobId));
+      if (existingApp) {
+        if (existingApp.status === 'Accepted') return;
         await api.withdrawApplication(jobId, user.id);
-        await loadData();
       } else {
-        await api.applyForJob(jobId, user.id);
-        await loadData();
+        await api.applyToJob(user.id, jobId);
       }
+      await loadData();
     } catch (err) {
-      console.error('Failed to update application status:', err);
-      loadData();
+      alert(err.message || 'Could not update application status.');
     }
   };
 
   const handleToggleSave = async (jobId) => {
-    const isSaved = savedJobIds.includes(jobId);
     try {
-      if (isSaved) {
+      if (savedJobIds.includes(jobId)) {
+        await api.unsaveJob(user.id, jobId);
         setSavedJobIds((prev) => prev.filter((id) => id !== jobId));
-        await api.removeSavedJob(user.id, jobId);
       } else {
-        setSavedJobIds((prev) => [...prev, jobId]);
         await api.saveJob(user.id, jobId);
+        setSavedJobIds((prev) => [...prev, jobId]);
       }
     } catch (err) {
-      console.error('Failed to update saved job status:', err);
-      loadData();
+      alert('Could not update saved job status.');
     }
   };
 
-
-
-  const liveJobs = useMemo(() => {
+  const filteredJobs = useMemo(() => {
     return jobs.filter((job) => {
+      // Don't show paused jobs unless the student already applied and got accepted
+      const app = studentApplications.find((a) => Number(a.job_id) === Number(job.id));
       const vac = job.vacancies !== undefined ? Number(job.vacancies) : 1;
       const isPaused = job.status === 'Paused' || vac <= 0;
-      const isAccepted = acceptedJobIds.includes(job.id);
-      const isRejected = rejectedJobIds.includes(job.id);
-      // Don't show paused opportunities to ones who have not applied yet,
-      // but do show them to ones who got rejected or selected
-      if (isPaused) {
-        return isAccepted || isRejected;
+      if (isPaused && (!app || app.status !== 'Accepted')) {
+        return false;
       }
+
+      // 1. Search term match
+      const query = searchTerm.toLowerCase().trim();
+      const matchesSearch =
+        !query ||
+        job.title.toLowerCase().includes(query) ||
+        (job.company && job.company.toLowerCase().includes(query)) ||
+        (job.location && job.location.toLowerCase().includes(query)) ||
+        (job.type && job.type.toLowerCase().includes(query));
+
+      if (!matchesSearch) return false;
+
+      // 2. Tab filter match
+      const isSaved = savedJobIds.includes(job.id);
+      const isAccepted = app?.status === 'Accepted';
+      const isApplied = app?.status === 'Applied';
+      const isRejected = app?.status === 'Rejected';
+
+      if (filterTab === 'saved') return isSaved;
+      if (filterTab === 'accepted') return isAccepted;
+      if (filterTab === 'applied') return isApplied;
+      if (filterTab === 'rejected') return isRejected;
+
       return true;
     });
-  }, [jobs, acceptedJobIds, rejectedJobIds]);
+  }, [jobs, searchTerm, filterTab, savedJobIds, studentApplications]);
 
-  const filteredJobs = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
-    return liveJobs.filter((job) => {
-      const matchesSearch =
-        !term ||
-        `${job.title} ${job.location} ${job.type} ${job.company} ${job.recruiter_name || ''}`
-          .toLowerCase()
-          .includes(term);
-
-      let matchesFilter = true;
-      if (filterTab === 'accepted') {
-        matchesFilter = acceptedJobIds.includes(job.id);
-      } else if (filterTab === 'rejected') {
-        matchesFilter = rejectedJobIds.includes(job.id);
-      } else if (filterTab === 'applied') {
-        matchesFilter = appliedJobIds.includes(job.id);
-      } else if (filterTab === 'saved') {
-        matchesFilter = savedJobIds.includes(job.id);
-      }
-
-      return matchesSearch && matchesFilter;
-    });
-  }, [liveJobs, searchTerm, filterTab, savedJobIds, appliedJobIds, acceptedJobIds, rejectedJobIds]);
+  const counts = useMemo(() => {
+    return {
+      all: jobs.filter((j) => {
+        const app = studentApplications.find((a) => Number(a.job_id) === Number(j.id));
+        const vac = j.vacancies !== undefined ? Number(j.vacancies) : 1;
+        const isPaused = j.status === 'Paused' || vac <= 0;
+        return !isPaused || (app && app.status === 'Accepted');
+      }).length,
+      saved: savedJobIds.length,
+      accepted: studentApplications.filter((a) => a.status === 'Accepted').length,
+      applied: studentApplications.filter((a) => a.status === 'Applied').length,
+      rejected: studentApplications.filter((a) => a.status === 'Rejected').length,
+    };
+  }, [jobs, savedJobIds, studentApplications]);
 
   return (
-    <div className="dashboard-screen student-screen">
+    <div className="student-dashboard">
       <Navbar
-        workspaceLabel="Student workspace"
+        workspaceLabel="STUDENT WORKSPACE"
         activePage={activePage}
         onNavChange={handlePageChange}
       />
@@ -222,160 +210,117 @@ export default function StudentDashboard() {
           </div>
         )}
 
-        {/* Jobs Section */}
-        <section id="live-jobs" className="student-jobs-section">
-          <div className="student-section-bar">
-            <div>
-              <p className="small-heading">LIVE OPPORTUNITIES</p>
-              <h2>
-                {filterTab === 'accepted'
-                  ? ' Accepted Applications'
-                  : filterTab === 'rejected'
-                  ? ' Declined Applications'
-                  : filterTab === 'applied'
-                  ? 'Your Applied Roles'
-                  : filterTab === 'saved'
-                  ? 'Your Saved Jobs'
-                  : 'Jobs available now'}
-              </h2>
-            </div>
+        {/* Toolbar & Filter Tabs */}
+        <div className="student-toolbar">
+          <div className="search-box">
+            <Search size={16} />
+            <input
+              type="text"
+              id="studentJobSearch"
+              placeholder="Search by role, company, or location..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
 
-            <div className="job-tools">
-              <div className="tab-pills-group">
-                <button
-                  type="button"
-                  className={`text-action ${filterTab === 'all' ? 'selected' : ''}`}
-                  onClick={() => setFilterTab('all')}
-                >
-                  All ({liveJobs.length})
-                </button>
+          <div className="filter-chips">
+            <button
+              type="button"
+              className={`chip-button ${filterTab === 'all' ? 'active' : ''}`}
+              onClick={() => setFilterTab('all')}
+            >
+              All opportunities <span className="chip-count">{counts.all}</span>
+            </button>
+            <button
+              type="button"
+              className={`chip-button ${filterTab === 'applied' ? 'active' : ''}`}
+              onClick={() => setFilterTab('applied')}
+            >
+              <FileText size={13} style={{ marginRight: '4px', verticalAlign: '-1px' }} />
+              Applied <span className="chip-count">{counts.applied}</span>
+            </button>
+            <button
+              type="button"
+              className={`chip-button ${filterTab === 'accepted' ? 'active' : ''}`}
+              onClick={() => setFilterTab('accepted')}
+            >
+              <Sparkles size={13} style={{ marginRight: '4px', verticalAlign: '-1px' }} />
+              Accepted <span className="chip-count">{counts.accepted}</span>
+            </button>
+            <button
+              type="button"
+              className={`chip-button ${filterTab === 'rejected' ? 'active' : ''}`}
+              onClick={() => setFilterTab('rejected')}
+            >
+              <XCircle size={13} style={{ marginRight: '4px', verticalAlign: '-1px' }} />
+              Rejected <span className="chip-count">{counts.rejected}</span>
+            </button>
+            <button
+              type="button"
+              className={`chip-button ${filterTab === 'saved' ? 'active' : ''}`}
+              onClick={() => setFilterTab('saved')}
+            >
+              <Bookmark size={13} style={{ marginRight: '4px', verticalAlign: '-1px' }} />
+              Saved <span className="chip-count">{counts.saved}</span>
+            </button>
+          </div>
+        </div>
 
-                {acceptedJobIds.length > 0 && (
-                  <button
-                    type="button"
-                    className={`text-action accepted-tab ${filterTab === 'accepted' ? 'selected' : ''}`}
-                    onClick={() => setFilterTab('accepted')}
-                  >
-                    <Sparkles size={12} style={{ marginRight: '3px' }} /> Accepted ({acceptedJobIds.length})
-                  </button>
-                )}
-
-                {rejectedJobIds.length > 0 && (
-                  <button
-                    type="button"
-                    className={`text-action rejected-tab ${filterTab === 'rejected' ? 'selected' : ''}`}
-                    onClick={() => setFilterTab('rejected')}
-                  >
-                    <XCircle size={12} style={{ marginRight: '3px' }} /> Rejected ({rejectedJobIds.length})
-                  </button>
-                )}
-
-                <button
-                  type="button"
-                  className={`text-action ${filterTab === 'applied' ? 'selected' : ''}`}
-                  onClick={() => setFilterTab('applied')}
-                >
-                  <FileText size={12} style={{ marginRight: '3px' }} /> Applied ({appliedJobIds.length})
-                </button>
-
-                <button
-                  id="savedJobsButton"
-                  className={`text-action ${filterTab === 'saved' ? 'selected' : ''}`}
-                  onClick={() => setFilterTab('saved')}
-                >
-                  <Bookmark size={12} style={{ marginRight: '3px' }} /> Saved ({savedJobIds.length})
-                </button>
-              </div>
-
-              <label className="search-box" htmlFor="jobSearch">
-                <Search size={15} style={{ color: 'var(--muted)', flexShrink: 0 }} />
-                <input
-                  id="jobSearch"
-                  type="search"
-                  placeholder="Search jobs, companies, or locations"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+        {/* Jobs Grid Section */}
+        {loading ? (
+          <div className="student-loading">
+            <RefreshCw className="spin-icon" size={24} />
+            <p>Loading available jobs...</p>
+          </div>
+        ) : filteredJobs.length === 0 ? (
+          <div className="student-empty-state">
+            <div className="empty-icon">💼</div>
+            <h3>No opportunities found</h3>
+            <p>
+              {searchTerm
+                ? `No jobs match "${searchTerm}". Try a broader term or clear your search.`
+                : filterTab === 'saved'
+                ? "You haven't saved any jobs yet. Click the star icon on any card to save it."
+                : filterTab === 'accepted'
+                ? "You don't have any accepted applications yet. Keep applying to open roles!"
+                : filterTab === 'applied'
+                ? "You haven't applied to any roles yet. Explore live opportunities below!"
+                : filterTab === 'rejected'
+                ? "You don't have any declined applications."
+                : "No job postings are currently active. Check back soon for new openings."}
+            </p>
+            {(searchTerm || filterTab !== 'all') && (
+              <button
+                type="button"
+                className="clear-search-btn"
+                onClick={() => {
+                  setSearchTerm('');
+                  setFilterTab('all');
+                }}
+              >
+                Reset filters
+              </button>
+            )}
+          </div>
+        ) : (
+          <div id="studentJobsList" className="student-jobs-grid">
+            {filteredJobs.map((job) => {
+              const app = studentApplications.find((a) => Number(a.job_id) === Number(job.id));
+              return (
+                <JobCardStudent
+                  key={job.id}
+                  job={job}
+                  application={app}
+                  isApplied={studentApplications.some((a) => Number(a.job_id) === Number(job.id))}
+                  isSaved={savedJobIds.includes(job.id)}
+                  onToggleApply={handleToggleApply}
+                  onToggleSave={handleToggleSave}
                 />
-              </label>
-            </div>
+              );
+            })}
           </div>
-
-          {loading ? (
-            <div style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--muted)' }}>
-              <RefreshCw size={24} className="spin-icon" style={{ marginBottom: '10px' }} />
-              <p>Loading available opportunities...</p>
-            </div>
-          ) : filteredJobs.length === 0 ? (
-            <div className="student-empty">
-              <span>
-                <Search size={22} />
-              </span>
-              <h3>
-                {searchTerm
-                  ? 'No roles match that search'
-                  : filterTab === 'accepted'
-                  ? 'No accepted applications yet'
-                  : filterTab === 'rejected'
-                  ? 'No rejected applications'
-                  : filterTab === 'applied'
-                  ? 'You have not applied to any roles yet'
-                  : filterTab === 'saved'
-                  ? 'No saved jobs yet'
-                  : 'New opportunities are on their way'}
-              </h3>
-              <p>
-                {searchTerm
-                  ? 'Try another job title or location.'
-                  : filterTab === 'accepted'
-                  ? 'When recruiters accept your application, you will be notified here and can chat directly.'
-                  : filterTab === 'rejected'
-                  ? 'If a recruiter does not move forward with an application, it will appear here.'
-                  : filterTab === 'applied'
-                  ? 'Browse live jobs and click "Apply Now" to start sending applications.'
-                  : filterTab === 'saved'
-                  ? 'Click "Save " on any job to keep track of roles you like.'
-                  : 'Check back soon — recruiters can publish jobs here anytime.'}
-              </p>
-            </div>
-          ) : (
-            <div id="studentJobsList" className="student-jobs-grid">
-              {filteredJobs.map((job) => {
-                const app = studentApplications.find((a) => Number(a.job_id) === Number(job.id));
-                return (
-                  <JobCardStudent
-                    key={job.id}
-                    job={job}
-                    application={app}
-                    isApplied={appliedJobIds.includes(job.id)}
-                    isSaved={savedJobIds.includes(job.id)}
-                    onToggleApply={handleToggleApply}
-                    onToggleSave={handleToggleSave}
-                  />
-                );
-              })}
-            </div>
-          )}
-        </section>
-
-        {/* Steps / Guidance */}
-        <section id="how-it-works" className="student-steps">
-          <div>
-            <b>1</b>
-            <h3>Explore live roles</h3>
-            <p>See jobs posted by recruiters as soon as they are active.</p>
-          </div>
-          <div>
-            <b>2</b>
-            <h3>Check the fit & Apply</h3>
-            <p>Review the hours, location, pay, and number of openings.</p>
-          </div>
-          <div>
-            <b>3</b>
-            <h3>Get notified on acceptance</h3>
-            <p>Employers accept your application and contact you directly.</p>
-          </div>
-        </section>
-        </main>}
+        )}
+      </main>}
       </div>
     </div>
   );
