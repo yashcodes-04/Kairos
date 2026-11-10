@@ -251,7 +251,7 @@ body {
   width: min(1380px, calc(100% - 40px));
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 225px minmax(0, 1fr);
+  grid-template-columns: 245px minmax(0, 1fr);
   gap: 34px;
   align-items: start;
 }
@@ -267,6 +267,7 @@ body {
   align-self: start;
   max-height: calc(100vh - 120px);
   overflow-y: auto;
+  overflow-x: hidden;
   scrollbar-width: thin;
   margin-top: 48px;
   padding: 18px 12px;
@@ -450,8 +451,9 @@ body {
 }
 
 .complete-portfolio-nudge {
-  width: calc(100% - 8px);
-  margin: 13px 4px 0;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 13px 0 0;
   padding: 11px;
   display: flex;
   align-items: center;
