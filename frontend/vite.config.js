@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     port: 5173,
   },
-  base: '/Kairos/',
+  base: '/',
   build: {
     rollupOptions: {
       output: {
